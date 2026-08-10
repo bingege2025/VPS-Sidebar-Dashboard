@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "VPS Dashboard — Multi-Provider VPS Manager",
-  "description": "Manage VPS servers across SolusVM, VirtFusion, and AWS EC2 — status, resources, batch operations, power actions, and expiry reminders.",
+  "description": "Manage VPS servers across SolusVM, VirtFusion, and AWS EC2 — status, resources, batch operations, power actions, expiry reminders.",
   "version": "1.6.0",
   "default_locale": "en",
   "permissions": ["storage", "alarms", "notifications"],
