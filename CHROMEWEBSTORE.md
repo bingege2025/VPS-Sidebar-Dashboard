@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — VPS Dashboard
 
-> Last Updated: 2026-07-30
+> Last Updated: 2026-08-08
 
 ## Store Listing (应用商店信息)
 
@@ -9,7 +9,7 @@
 *(必须与 manifest.json 中的 name 保持一致。最多 45 个字符，当前 42 字符。)*
 
 **Short Description (简短说明)** [REQUIRED]
-`Manage VPS servers across SolusVM, VirtFusion, and AWS EC2 — status, resources, batch operations, and power actions.`
+`Manage VPS servers across SolusVM, VirtFusion, and AWS EC2 — status, batch operations, power actions, and expiry reminders.`
 *(最多 132 个字符，当前 117 字符。显示在搜索结果和卡片中。)*
 
 **Detailed Description (详细说明)** [REQUIRED]
@@ -67,6 +67,15 @@ Export your local configuration as a JSON backup and import it later. This is us
 
 Important: exported configuration files include API credentials. Keep them private and do not share them publicly.
 
+Expiry reminders
+Never miss a renewal. The extension checks your servers every 6 hours in the background and notifies you 30, 7, and 3 days before a server expires. Expired servers remind you daily until renewed. A global master switch and a per-server opt-out are both available.
+
+Automatic expiry dates
+For providers that expose a billing or expiry date (such as SolusVM 2 and VirtFusion), the date is pulled automatically. Manual entry always wins, so you can override it at any time. (API dates may be inaccurate — always verify.)
+
+Calendar export (.ics)
+Export a single server or all servers to a .ics calendar file with built-in alarms at each threshold. Import it into Google Calendar, Apple Calendar, Outlook, or any standards-compliant calendar.
+
 Multilingual interface
 The extension supports:
 English
@@ -88,7 +97,7 @@ Your API URL, API Key, API Hash, API Token, and configuration data are stored lo
 
 What this extension does not do
 
-It does not support Virtualizor, Proxmox, cPanel, Plesk, or generic SSH-based monitoring (Virtualizor and Proxmox are on the roadmap).
+It does not support full panel management for Virtualizor, Proxmox, cPanel, Plesk, or generic SSH-based monitoring (Virtualizor and Proxmox are on the roadmap). Note: Proxmox and Virtualizor are not yet supported for full panel management, but their expiry-date reminders work via dates you enter or that the API returns.
 
 It does not install an agent inside your VPS.
 
@@ -208,6 +217,7 @@ Do not include API keys, API hashes, tokens, IP addresses, hostnames, or other s
 
 | 版本号 | 发布日期 | 变更说明 | 状态 |
 |---------|------|---------|--------|
+| 1.6.0 | 2026-08-04 | 新增到期提醒（后台每 6 小时检查，30/7/3 天前通知，过期每日提醒，全局与单台开关）；API 自动拉取到期日（手工优先）；.ics 日历导出（含闹钟）；到期字段纳入配置导入/导出。 | 待发布 |
 | 1.5.0 | 2026-07-25 | 新增 AWS EC2 与 VirtFusion（实验）面板；批量刷新/重启/关机（可选择目标服务器）；复制服务器配置；开机/关机按钮随服务器状态智能切换（含 EC2 过渡状态识别）；操作后静默刷新；界面全面改版。 | 待发布 |
 | 1.4.0 | 2026-07-15 | 新增 SolusVM 2 面板支持。 | 已发布 |
 | 1.3.0 | 2026-07-01 | 多语言支持（德语、法语、俄语）。 | 已发布 |

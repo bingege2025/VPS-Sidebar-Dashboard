@@ -152,7 +152,9 @@ function updatePanelHelp() {
     $('providerGuideText').textContent = t('providerGuideText');
   }
   if (guideLink) {
-    guideLink.href = LANDING_BASE_URL + guidePath;
+    // Pass the current plugin UI language so the landing guide opens in the same language.
+    const pluginLang = window.currentLang || 'en';
+    guideLink.href = LANDING_BASE_URL + guidePath + '?lang=' + encodeURIComponent(pluginLang);
     guideLink.textContent = t('providerGuideLink');
   }
 
