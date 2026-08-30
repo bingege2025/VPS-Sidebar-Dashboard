@@ -4,7 +4,7 @@
     "description": "The name of the extension"
   },
   "appDescription": {
-    "message": "Manage VPS servers across multiple providers — view status and resources, perform power actions, and get expiry reminders in your browser.",
+    "message": "Manage VPS servers across multiple providers — status, resources, power actions, and expiry reminders in your browser sidebar.",
     "description": "The description of the extension"
   }
 }

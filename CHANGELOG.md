@@ -20,6 +20,7 @@ All notable changes to VPS Dashboard are documented here.
 ### Fixed
 - Choosing a provider that has no setup guide no longer leaves the previous provider's field labels on the Add Server form.
 - Picking a provider without a setup guide from the "Get Started" screen now correctly preselects it in Settings.
+- Store short description (manifest `description`) was 137 characters, over the Chrome Web Store 132-character limit; it now uses per-locale `__MSG_appDescription__` and the en/de/fr strings are trimmed so every language is within the limit.
 
 ## 1.6.2 - 2026-08-29
 

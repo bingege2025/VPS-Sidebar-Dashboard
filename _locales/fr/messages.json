@@ -4,7 +4,7 @@
     "description": "Le nom de l'extension"
   },
   "appDescription": {
-    "message": "Gérez vos VPS chez plusieurs fournisseurs — statut, ressources, actions d'alimentation et rappels d'expiration dans votre navigateur.",
+    "message": "Gérez vos VPS chez plusieurs fournisseurs — statut, ressources, actions d'alimentation et rappels d'expiration.",
     "description": "La description de l'extension"
   }
 }
