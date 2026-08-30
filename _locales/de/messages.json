@@ -4,7 +4,7 @@
     "description": "Der Name der Erweiterung"
   },
   "appDescription": {
-    "message": "Verwalten Sie VPS-Server über SolusVM, VirtFusion und AWS EC2 — Status und Ressourcen anzeigen und mehrere Server im Browser steuern.",
+    "message": "VPS-Server bei mehreren Anbietern verwalten — Status und Ressourcen anzeigen, Stromaktionen ausführen und Ablauferinnerungen erhalten.",
     "description": "Die Beschreibung der Erweiterung"
   }
 }

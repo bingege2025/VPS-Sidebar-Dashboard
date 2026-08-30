@@ -2,6 +2,56 @@
 
 All notable changes to VPS Dashboard are documented here.
 
+## 1.6.4 - 2026-08-30
+
+### Added
+- Lower-friction feedback:
+  - GitHub issue templates now auto-fill anonymous diagnostics (configured server count by provider type, extension version, language, analytics state) so reporters don't type environment details and follow-ups are rarely needed. No credentials, keys, hostnames, or IPs are included.
+  - A "Report this error" button now appears on the error screen; one click opens a pre-filled bug report carrying the captured error message and diagnostics.
+  - A new "Quick feedback" link in the popup footer opens an anonymous, no-login feedback page (no GitHub account required) that submits in seconds.
+  - "Request a provider" and "Report a bug" in the popup footer now open that same anonymous feedback page with the right category preselected, instead of requiring a GitHub account; submissions go to anonymous analytics.
+
+## 1.6.3 - 2026-08-29
+
+### Added
+- Four more control panels are now selectable: Proxmox VE (API Token), Hetzner Cloud (API Token), DigitalOcean (API Token), and AWS Lightsail (IAM Access Key + Secret). Each supports status, resource view, and power actions (start / stop / reboot).
+- All four are marked experimental — they are newly enabled, so please report anything that looks off.
+- Setup guides for the four new panels are now linked from the Settings page (also published on the project site).
+
+### Changed
+- The panel type selector and the first-run "Get Started" screen now list every supported provider, keeping the two in sync.
+
+### Fixed
+- Choosing a provider that has no setup guide no longer leaves the previous provider's field labels on the Add Server form.
+- Picking a provider without a setup guide from the "Get Started" screen now correctly preselects it in Settings.
+
+## 1.6.2 - 2026-08-29
+
+### Added
+- First-run onboarding: opening the extension with no servers configured now shows a Get Started view instead of the empty state. Pick a provider (SolusVM, SolusVM 2, AWS EC2, VirtFusion, or Virtualizor) and Settings opens with that panel type already selected. "Skip for now" returns to the previous empty state.
+- Opt-out switch for anonymous usage analytics in Settings (default on). Turning it off stops all analytics events from being sent. Available in all five languages (zh/en/de/fr/ru).
+
+### Changed
+- Privacy copy made accurate across PRIVACY.md, PRIVACY_ANALYTICS.md, and CHROMEWEBSTORE.md:
+  - Clarified that Google Analytics receives the network IP used to transmit each event (no IP is placed in the event data itself), and recommended enabling IP anonymization in the GA4 property.
+  - Analytics event names now use ASCII snake_case (for example `extension_opened`, `save_server`), matching GA4 Measurement Protocol requirements; the event reference in PRIVACY_ANALYTICS.md has been updated to match.
+  - Marked the analytics opt-out as implemented (Settings switch), not just reserved.
+  - Reworded "Local-only and privacy-first" to "Local-first" and noted anonymous analytics is the only third-party request and can be disabled.
+  - Added a note that GA infers an approximate location from IP, so the Chrome Web Store data-disclosure should declare Location.
+
+## 1.6.1 - 2026-08-16
+
+### Added
+
+- Anonymous feature-usage analytics for product improvement. Events include feature names and provider type only, never credentials or server identity.
+- Experimental Virtualizor support for single-VPS accounts.
+
+### Fixed
+
+- Virtualizor power actions now include the required `do=1` parameter.
+- Virtualizor is shown with provider metadata in the UI.
+- README, privacy policy, and Chrome Web Store notes now match the analytics behavior.
+
 ## 1.6.0 - 2026-08-04
 
 ### Added

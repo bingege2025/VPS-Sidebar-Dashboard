@@ -7,6 +7,8 @@
 importScripts('shared.js');
 // computeReminders (pure reminder engine) → expiry-reminder.js
 importScripts('expiry-reminder.js');
+// Anonymous GA4 Measurement Protocol analytics → analytics.js
+importScripts('analytics.js');
 
 // Check and migrate legacy data structures
 function checkAndMigrateConfig(callback) {
@@ -556,7 +558,13 @@ async function getVirtualizorSingle(config) {
   requireVirtualizorConfig(config);
   const data = await fetchVirtualizor(config, { act: 'listvs' });
 
-  const vpsList = data.vps || [];
+  let vpsList = [];
+  if (Array.isArray(data.vps)) {
+    vpsList = data.vps;
+  } else if (data.vps && typeof data.vps === 'object') {
+    vpsList = Object.values(data.vps);
+  }
+
   // Also check single vps response
   const singleVps = data.vs;
   if (singleVps && !Array.isArray(singleVps)) {
@@ -588,7 +596,13 @@ async function callVirtualizorAction(action, configOverride) {
 
   // Get VPS ID first
   const listData = await fetchVirtualizor(config, { act: 'listvs' });
-  const vpsList = listData.vps || [];
+  let vpsList = [];
+  if (Array.isArray(listData.vps)) {
+    vpsList = listData.vps;
+  } else if (listData.vps && typeof listData.vps === 'object') {
+    vpsList = Object.values(listData.vps);
+  }
+
   let vpsId;
   if (vpsList.length > 0) {
     vpsId = vpsList[0].vpsid;
@@ -598,7 +612,7 @@ async function callVirtualizorAction(action, configOverride) {
     throw new Error('No VPS found for action');
   }
 
-  return await fetchVirtualizor(config, { act, svs: String(vpsId) });
+  return await fetchVirtualizor(config, { act, svs: String(vpsId), do: '1' });
 }
 
 // ─── Proxmox VE API ────────────────────────────────────────────
@@ -1931,6 +1945,12 @@ async function batchAction(action, serverIds) {
 // Listen for messages from popup / options
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const handlers = {
+    // "打开插件" is delegated here from the popup so the MP request is sent from a
+    // long-lived SW context (a popup may be torn down before an async fetch finishes,
+    // silently dropping the event). The handler keeps the SW alive until sendResponse.
+    analytics_opened: () => (typeof Analytics !== 'undefined'
+      ? Analytics.extensionOpened().then(function () { return {}; })
+      : Promise.resolve({})),
     getStatus: getServerStatus,
     getInfo: getServerInfo,
     reboot: rebootServer,
@@ -1939,7 +1959,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     batchRefresh: () => batchRefresh(message.serverIds),
     batchReboot: () => batchAction('reboot', message.serverIds),
     batchShutdown: () => batchAction('shutdown', message.serverIds),
-    testConnection: () => testConnection(message.config),
+    testConnection: () => testConnection(message.config).then(result => {
+      if (typeof Analytics !== 'undefined') Analytics.providerConnected(getPanelType(message.config)).catch(() => {});
+      return result;
+    }),
     testReminder: () => Promise.resolve(sendSampleReminder())
   };
 
@@ -2018,10 +2041,36 @@ async function checkExpiryReminders() {
     toNotify.forEach(sendReminderNotification);
     if (toNotify.length) {
       console.log(`[reminder] ${toNotify.length} notification(s) fired`);
+      if (typeof Analytics !== 'undefined') Analytics.expiryReminderFired().catch(() => {});
     }
   } catch (e) {
     console.warn('[reminder] check failed', e);
   }
+}
+
+// Set the uninstall page (anonymous client_id only, no PII) so we can learn
+// about churn without identifying the user. The host is injected at build time
+// via the UNINSTALL_URL env var (see package-extension.sh); the source only
+// carries a build-time placeholder, never a real domain.
+function setupUninstallUrl() {
+  if (!chrome.runtime || !chrome.runtime.setUninstallURL) return;
+  Analytics.getClientId().then(function (cid) {
+    chrome.storage.local.get(['lang'], function (data) {
+      var lang = (data && data.lang) || 'en';
+      var url = 'https://__UNINSTALL_URL__/uninstall?src=vps-dashboard&v=1&cid=' + encodeURIComponent(cid) + '&lang=' + encodeURIComponent(lang);
+      chrome.runtime.setUninstallURL(url, function () {
+        if (chrome.runtime.lastError) console.warn('[analytics] setUninstallURL failed', chrome.runtime.lastError);
+      });
+    });
+  }).catch(function () {});
+}
+
+if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.lang) {
+      setupUninstallUrl();
+    }
+  });
 }
 
 // Schedule the periodic check (and run once on install) when the APIs exist.
@@ -2037,6 +2086,7 @@ if (typeof chrome !== 'undefined' && chrome.alarms) {
     chrome.runtime.onInstalled.addListener(() => {
       ensureAlarm();
       checkExpiryReminders();
+      setupUninstallUrl();
     });
   }
   if (chrome.runtime && chrome.runtime.onStartup) {

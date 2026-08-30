@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — VPS Dashboard
 
-> Last Updated: 2026-08-08
+> Last Updated: 2026-08-29
 
 ## Store Listing (应用商店信息)
 
@@ -9,130 +9,117 @@
 *(必须与 manifest.json 中的 name 保持一致。最多 45 个字符，当前 42 字符。)*
 
 **Short Description (简短说明)** [REQUIRED]
-`Manage VPS servers across SolusVM, VirtFusion, and AWS EC2 — status, batch operations, power actions, and expiry reminders.`
-*(最多 132 个字符，当前 117 字符。显示在搜索结果和卡片中。)*
+`Manage VPS servers across multiple providers — status, resources, power actions, and expiry reminders in your browser sidebar.`
+*(最多 132 个字符。显示在搜索结果和卡片中。)*
 
 **Detailed Description (详细说明)** [REQUIRED]
-*(最多 16,000 个字符。注：Chrome Web Store 详情页不支持 Markdown 格式，在开发者后台粘贴时请去除 Markdown 标记，使用换行进行分段。)*
+*(最多 16,000 个字符。此字段为纯文本：Chrome 网上应用店不渲染 HTML / Markdown，下方已是可直接复制粘贴的纯文本版本，靠换行和「全大写标题 / - 列表项」保持结构。)*
 
 ```text
-Build tools for VPS users.
+VPS Dashboard
 
-VPS Dashboard is a lightweight, local-only Chrome extension for managing VPS servers from multiple providers and control panels — all from your browser.
+A lightweight, privacy-conscious Chrome extension for managing VPS servers across multiple providers and control panels.
 
-It is built for VPS users who have servers spread across different panels and want a faster way to check provider-side status, bandwidth, resources, and basic power actions without opening each provider panel.
+Manage your servers directly from the browser sidebar — check status, resource usage, bandwidth, and perform power actions without opening multiple provider dashboards.
 
-This is not a generic VPS monitor. It does not replace tools like Beszel, Uptime Kuma, Prometheus, or Netdata. It is a small multi-panel API dashboard for quick provider-side checks and power controls.
+LOCAL-FIRST. NO ACCOUNT. Your API credentials never leave your browser.
 
-Supported Panels
+WHY VPS DASHBOARD?
 
-- SolusVM v1 (stable)
-- AWS EC2 (stable)
-- SolusVM 2 (experimental)
-- VirtFusion (experimental)
+- One dashboard for all your VPS
+- Fast access from the Chrome sidebar
+- Local-first architecture — your server data and credentials stay on your device. Only anonymous, non-identifying usage events are sent to Google Analytics, and you can disable this anytime in Settings.
+- Multi-provider support
+- Built for VPS users, not enterprise monitoring
 
-More panel types are on the roadmap.
+VPS Dashboard focuses on provider-side management rather than OS-level monitoring. It complements dedicated monitoring tools — it doesn't replace them.
 
-Key Features
+SUPPORTED PROVIDERS
 
-Multi-server management
-Add and manage multiple VPS API profiles in one place. Quickly switch between servers from the popup. Duplicate an existing server profile with one click when adding similar servers.
+Connects to multiple VPS providers and control panels. Some integrations are stable, others experimental — the in-extension setup guides cover each one.
 
-Multi-panel support
-Connect to SolusVM v1 panels, AWS EC2 instances, SolusVM 2 (experimental), and VirtFusion (experimental) — each with its own API driver.
+KEY FEATURES
 
-Batch operations
-Select any subset of your servers with checkboxes and run batch refresh, batch reboot, or batch shutdown. Results are reported per server.
+Multi-provider support
+Connect to multiple VPS providers using dedicated API drivers. Manage them all from a single interface.
 
 Provider-side resource view
-View status, memory, disk, bandwidth, IP address, hostname, OS/template, and other fields when available from the API.
+View status, memory, disk, bandwidth, IP, hostname, OS, and more — all from your provider's API.
 
-Smart power actions
-Run reboot, boot, and shutdown actions directly from the popup. Reboot and shutdown include an inline confirmation panel to reduce accidental operations. Action buttons automatically adapt to the server's current state — on AWS EC2, transitional states like "stopping" or "pending" are detected and power actions are paused until the instance settles.
+Smart power controls
+Start, stop, and reboot servers directly from the popup (where supported by the provider). Confirmation dialogs prevent accidents. Power actions adapt to each provider's server state (transitional states like pending or stopping are detected automatically).
 
-Tags and search
-Add tags to servers and quickly filter or search your VPS list.
+Batch operations
+Refresh, reboot, or shut down multiple servers at once. Results are reported individually for each.
+
+Tags & search
+Organize servers with custom tags. Filter and search to find them instantly.
 
 Default server
-Mark one server as the default so it loads first when opening the extension.
-
-Dark mode
-Switch between light and dark mode. The preference is saved locally.
+Set a default server that loads automatically when you open the extension.
 
 Privacy mode
-Blur sensitive fields such as hostname and IP address when taking screenshots or sharing your screen.
+Blur IPs, hostnames, and sensitive info in one click — safe for screenshots and screen sharing.
 
-Configuration import and export
-Export your local configuration as a JSON backup and import it later. This is useful when moving between browsers, machines, or local development builds.
-
-Important: exported configuration files include API credentials. Keep them private and do not share them publicly.
+Config import / export
+Export your configuration as a JSON backup. Import it when switching browsers or machines.
 
 Expiry reminders
-Never miss a renewal. The extension checks your servers every 6 hours in the background and notifies you 30, 7, and 3 days before a server expires. Expired servers remind you daily until renewed. A global master switch and a per-server opt-out are both available.
+The extension checks your servers every 6 hours and notifies you at 30, 7, and 3 days before expiry. Expired servers remind you daily until renewed. Global master switch and per-server opt-out included.
 
 Automatic expiry dates
-For providers that expose a billing or expiry date (such as SolusVM 2 and VirtFusion), the date is pulled automatically. Manual entry always wins, so you can override it at any time. (API dates may be inaccurate — always verify.)
+For providers that expose billing dates, the date is pulled automatically. Manual entry always overrides.
+API dates may be inaccurate — verify them.
 
 Calendar export (.ics)
-Export a single server or all servers to a .ics calendar file with built-in alarms at each threshold. Import it into Google Calendar, Apple Calendar, Outlook, or any standards-compliant calendar.
+Export servers to a .ics calendar file with alarms at each threshold. Import into Google Calendar, Apple Calendar, Outlook, or any standards-compliant calendar.
 
-Multilingual interface
-The extension supports:
-English
-Simplified Chinese
-German
-French
-Russian
+Dark mode
+Light and dark themes included.
 
-Local-only and privacy-first
+Multilingual
+English · 中文 · Deutsch · Français · Русский
 
-No backend server
-No account required
-No telemetry
-No analytics
-No third-party proxy
-No data collection
+PRIVACY
 
-Your API URL, API Key, API Hash, API Token, and configuration data are stored locally in Chrome storage. API requests are sent directly from your browser to the panel endpoint you configure.
+- Local processing — your server info runs in your browser; only anonymous analytics is sent to Google Analytics
+- No account required — zero sign-up
+- No collection of API keys, credentials, or sensitive data
+- Direct API calls to your provider — server requests go straight to your provider; the only third-party request is optional, anonymous analytics
+- Your server config and credentials stay in Chrome local storage
 
-What this extension does not do
+ANONYMOUS ANALYTICS
 
-It does not support full panel management for Virtualizor, Proxmox, cPanel, Plesk, or generic SSH-based monitoring (Virtualizor and Proxmox are on the roadmap). Note: Proxmox and Virtualizor are not yet supported for full panel management, but their expiry-date reminders work via dates you enter or that the API returns.
+The extension may send anonymous feature-usage events (e.g., opening the extension, clicking refresh/reboot, viewing a guide) to Google Analytics. These events contain only the feature name and provider type — never API keys, credentials, hostnames, or server content. Like any request to a third-party service, Google receives the network IP used to send each event; we do not put any IP in the event data. You can disable analytics entirely from Settings.
 
-It does not install an agent inside your VPS.
+WHAT VPS DASHBOARD DOES NOT DO
 
-It does not continuously monitor uptime in the background.
+This extension is intentionally focused on provider-side management.
 
-It does not collect or upload your server data.
+It does not:
+- Install an agent inside your VPS
+- Continuously monitor uptime
+- Replace monitoring platforms
+- Upload or collect your API credentials or server configuration
 
-Getting started
+GETTING STARTED
 
-Open the extension settings page.
-Add a server profile.
-Choose the panel type: SolusVM v1, AWS EC2, SolusVM 2 (experimental), or VirtFusion (experimental).
-Enter your API URL and credentials.
-Test the connection.
-Open the popup to view status and perform quick actions.
+When you first open the extension with no servers configured, a Get Started screen asks which provider you want to connect. Pick one and Settings opens with that panel type already selected. You can skip it and add a server manually:
 
-For SolusVM v1, the API endpoint usually looks like:
-https://panel.example.com/api/client/command.php
+1. Open the extension settings
+2. Add a server profile
+3. Select the provider type
+4. Enter your API endpoint and credentials
+5. Test the connection
+6. Open the popup to view status and perform actions
 
-For SolusVM 2 experimental mode, a full virtual server API URL is recommended when available, for example:
-https://panel.example.com/api/v1/servers/123
+For detailed setup instructions per provider, see the in-extension setup guides.
 
-For AWS EC2, enter the region (optionally with an instance ID) in the API URL field, and use an IAM access key pair as credentials. The IAM user needs ec2:DescribeInstances, ec2:StartInstances, ec2:StopInstances, and ec2:RebootInstances permissions. Examples:
-us-east-1
-us-east-1/i-0123456789abcdef0
+FEEDBACK
 
-Feedback
+Feature requests, bug reports, and provider compatibility reports are welcome. Use the built-in feedback link in the extension to create a pre-filled GitHub issue.
 
-The extension footer has three quick links:
-
-- **Request a provider** — opens a pre-filled GitHub issue to ask for a new VPS provider or control panel. Only the provider name is required; everything else is optional, so you can submit in seconds.
-- **Report a bug** — opens a pre-filled GitHub issue for bug reports. Extension version, language, and browser are auto-filled to save you typing.
-- **Contact developer** — opens your mail client to email the developer directly.
-
-Do not include API keys, API hashes, tokens, IP addresses, hostnames, or other sensitive information in public issues.
+Do not include API keys, secrets, tokens, IP addresses, hostnames, or any other sensitive information in public reports.
 ```
 
 **Category (类别)** [REQUIRED]
@@ -166,8 +153,9 @@ Do not include API keys, API hashes, tokens, IP addresses, hostnames, or other s
 | 权限名称 (Permission) | 类型 (Type) | 英文合理性说明 (Justification in English) |
 |------------|------|---------------|
 | `storage` | permissions | Used to store server API configurations (API URL, API Key, API Hash/Token) and user preferences locally on the user's device. |
-| `https://*/*` and `http://*/*` | host_permissions | Required to make fetch requests directly to user-configured VPS control panel endpoints (SolusVM, SolusVM 2, VirtFusion), which may reside on custom provider domains over HTTP or HTTPS, to retrieve server statuses and send control commands (reboot/shutdown/boot). |
+| `https://*/*` and `http://*/*` | host_permissions | Required to make fetch requests directly to user-configured VPS control panel endpoints (SolusVM, SolusVM 2, VirtFusion, Virtualizor), which may reside on custom provider domains over HTTP or HTTPS, to retrieve server statuses and send control commands (reboot/shutdown/boot). |
 | `https://*.amazonaws.com/*` | host_permissions | Required to call AWS EC2 APIs (DescribeInstances, StartInstances, StopInstances, RebootInstances) and CloudWatch metrics for user-owned EC2 instances, using the user's own IAM credentials. |
+| `https://www.google-analytics.com/*` and `https://region1.google-analytics.com/*` | host_permissions | Required to send anonymous feature-usage events to Google Analytics 4 Measurement Protocol. Events include feature name and provider type only; they never include server credentials, API endpoints, IP addresses, hostnames, instance IDs, or server aliases. |
 
 ---
 
@@ -177,7 +165,24 @@ Do not include API keys, API hashes, tokens, IP addresses, hostnames, or other s
 
 ### 1. Data Collection (数据收集)
 **Does the extension collect user data? (该扩展是否收集用户数据？)**
-`No` (不收集任何数据)
+`Yes`
+
+Recommended category:
+- `User activity`: anonymous feature-usage events, such as opening the extension, testing a connection, saving a server profile, clicking refresh/reboot/shutdown, exporting/importing configuration, viewing a setup guide, or using feedback links.
+
+Do not declare (these are not collected):
+- Personally identifiable information
+- Authentication information
+- Financial and payment information
+- Health information
+- Personal communications
+- Web history
+- User content
+
+Note: Google Analytics receives the network IP used to send each event and may infer approximate location from it. To stay accurate, declare "Location" as approximate under the data-collection form.
+
+Important disclosure:
+The extension does not collect API URLs, API keys, API hashes, tokens, cloud secret keys, hostnames, IP addresses, instance IDs, server aliases, exported configuration files, or VPS content.
 
 ### 2. Data Use Certification (数据使用承诺)
 *(必须勾选以下三项以符合规范)*
@@ -190,10 +195,10 @@ Do not include API keys, API hashes, tokens, IP addresses, hostnames, or other s
 ## Privacy Policy (隐私政策链接)
 
 **Privacy Policy URL** [REQUIRED]
-您的隐私政策在线地址。
-*(建议：将项目根目录下的 `PRIVACY.md` 托管到 GitHub Pages 或使用 GitHub 仓库文件的 Raw 链接。)*
-例如：
-`https://github.com/bingege2025/VPS-Sidebar-Dashboard/blob/main/PRIVACY.md` (或对应的 GitHub Pages 地址)
+您的隐私政策在线地址（已通过 GitHub Pages 托管，公开可访问）：
+`https://bingege2025.github.io/VPS-Sidebar-Dashboard/privacy.html`
+
+*(源文件：`PRIVACY.md`；托管分支：`gh-pages`（仅含隐私文件，不混入侵主分支）。如需修改，改完 `privacy.html` 后重新推 `gh-pages` 即可。)*
 
 ---
 

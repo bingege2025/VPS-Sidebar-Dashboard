@@ -414,6 +414,19 @@
           <div id="i18n_hintThresholds" class="hint">Pick one or more windows. Expired servers remind you once per day.</div>
           <button id="testReminderBtn" class="btn-tool" type="button" style="margin-top:10px;">Send test notification</button>
         </div>
+
+        <div class="form-group" style="margin-top:14px; margin-bottom: 0;">
+          <div class="switch-row">
+            <span>
+              <span id="i18n_labelAnalytics">Anonymous usage analytics</span>
+              <span id="i18n_hintAnalytics" class="hint">Help us improve the product. Only the feature name and provider type are sent; turn off anytime.</span>
+            </span>
+            <label class="switch">
+              <input type="checkbox" id="analyticsEnabled" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
       </div>
 
       <div id="formTitle" class="form-title">Add New Server</div>
@@ -429,8 +442,13 @@
         <select id="panelType">
           <option value="solusvm" selected>SolusVM v1</option>
           <option value="ec2">AWS EC2</option>
+          <option value="lightsail">AWS Lightsail (experimental)</option>
           <option value="solusvm2">SolusVM v2 (experimental)</option>
           <option value="virtfusion">VirtFusion (experimental)</option>
+          <option value="virtualizor">Virtualizor (experimental)</option>
+          <option value="proxmox">Proxmox VE (experimental)</option>
+          <option value="hetzner">Hetzner (experimental)</option>
+          <option value="digitalocean">DigitalOcean (experimental)</option>
         </select>
         <div id="i18n_hintPanelType" class="hint">Select the control panel this VPS uses (more types coming soon)</div>
         <div class="provider-guide">
@@ -508,6 +526,7 @@
   <script src="i18n.js"></script>
   <script src="shared.js"></script>
   <script src="ics-generator.js"></script>
+  <script src="analytics.js"></script>
   <script src="options.js"></script>
 </body>
 </html>

@@ -91,7 +91,9 @@ const depFuncs = [
   // DigitalOcean
   'requireDOConfig', 'normalizeDOBaseUrl', 'fetchDO', 'normalizeDOServer', 'getDOSingle',
   // Lightsail
-  'sha256', 'hmacSign', 'hmacHex', 'getSignatureKey', 'signAWSRequest', 'requireLightsailConfig', 'normalizeLightsailServer', 'getLightsailSingle'
+  'sha256', 'hmacSign', 'hmacHex', 'getSignatureKey', 'signAWSRequest', 'requireLightsailConfig', 'normalizeLightsailServer', 'getLightsailSingle',
+  // EC2
+  'getEC2MemoryMB'
 ];
 
 for (const fn of depFuncs) {
@@ -164,6 +166,18 @@ test('getVirtualizorSingle — url with index.php', async () => {
   };
   const result = await getVirtualizorSingle({ apiUrl: 'https://panel.example.com/index.php', apiKey: 'k', apiHash: 'p' });
   assertEq(result.status, 'offline');
+});
+
+test('callVirtualizorAction — includes do=1', async () => {
+  mockResponses = {
+    'GET https://panel.example.com/index.php?api=json&apikey=k&apipass=p&act=listvs': {
+      ok: true, body: { vps: { '1': { vpsid: '1', hostname: 'h', status: '1', ips: '', ram: '512', disk_space: '10', bandwidth: '500', bandwidth_used: '0' } } }
+    },
+    'GET https://panel.example.com/index.php?api=json&apikey=k&apipass=p&act=restart&svs=1&do=1': {
+      ok: true, body: { done: { msg: 'ok' } }
+    }
+  };
+  await callVirtualizorAction('reboot', { apiUrl: 'https://panel.example.com', apiKey: 'k', apiHash: 'p' });
 });
 
 // ─── Proxmox API mock test ───────────────────────────────────

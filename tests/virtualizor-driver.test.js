@@ -126,11 +126,28 @@ async function testMissingConfig() {
   assert.ok(threw, 'should throw on missing config');
 }
 
+async function testActionAddsDoParameter() {
+  const seen = [];
+  const ctx = loadBackground(makeFetch(url => {
+    seen.push(String(url));
+    if (String(url).includes('act=listvs')) return listvsResponse();
+    return JSON.stringify({ done: { msg: 'ok' } });
+  }));
+
+  await ctx.callVirtualizorAction('reboot', { apiUrl: 'https://panel.example.com', apiKey: 'AK', apiHash: 'AP' });
+
+  const actionUrl = seen.find(url => url.includes('act=restart'));
+  assert.ok(actionUrl, 'restart action should be called');
+  assert.ok(actionUrl.includes('svs=12345'), 'action should include VPS id');
+  assert.ok(actionUrl.includes('do=1'), 'Virtualizor power actions require do=1');
+}
+
 async function run() {
   await testListvsSingleVps();
   await testVsObjectShape();
   await testApiError();
   await testMissingConfig();
+  await testActionAddsDoParameter();
   console.log('virtualizor-driver tests passed');
 }
 

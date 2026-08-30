@@ -4,7 +4,7 @@
     "description": "Le nom de l'extension"
   },
   "appDescription": {
-    "message": "Gérez vos VPS sur SolusVM, VirtFusion et AWS EC2 — consultez le statut et les ressources, et contrôlez plusieurs serveurs depuis votre navigateur.",
+    "message": "Gérez vos VPS chez plusieurs fournisseurs — statut, ressources, actions d'alimentation et rappels d'expiration dans votre navigateur.",
     "description": "La description de l'extension"
   }
 }

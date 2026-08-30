@@ -4,7 +4,7 @@
     "description": "扩展名称"
   },
   "appDescription": {
-    "message": "跨 SolusVM、VirtFusion、AWS EC2 管理 VPS 服务器——在浏览器中查看状态与资源，批量管理多台服务器。",
+    "message": "跨多家服务商管理 VPS 服务器——在浏览器中查看状态与资源，执行电源操作，获取到期提醒。",
     "description": "扩展描述"
   }
 }
