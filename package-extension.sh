@@ -29,6 +29,32 @@ cp manifest.json background.js i18n.js shared.js ics-generator.js expiry-reminde
    popup.html popup.js options.html options.js "$BUILD_DIR/"
 cp -R icons logos _locales "$BUILD_DIR/"
 
+# ── 硬约束：商店短描述 ≤132 字符/语言（超限上传会被拒） ──────
+# manifest 用 __MSG_appDescription__，实际值在各 _locales/<lang>/messages.json 的 appDescription；
+# 若 revert 成纯字符串，则该字符串对所有语言生效，也必须 ≤132。任何超限都中止打包。
+python3 - <<'PY'
+import json, glob, sys
+LIMIT = 132
+ok = True
+with open('manifest.json') as f:
+    m = json.load(f)
+desc = m.get('description', '')
+if not desc.startswith('__MSG_'):
+    if len(desc) > LIMIT:
+        print(f"✗ manifest description ({len(desc)} chars) exceeds {LIMIT}-char store limit: {desc!r}")
+        ok = False
+for f in sorted(glob.glob('_locales/*/messages.json')):
+    d = json.load(open(f))
+    ad = d.get('appDescription', {}).get('message', '')
+    if len(ad) > LIMIT:
+        print(f"✗ {f} appDescription ({len(ad)} chars) exceeds {LIMIT}-char store limit")
+        ok = False
+if not ok:
+    print("打包中止：请先裁剪超限的短描述再打包（见 MEMORY.md「打包硬约束」）。")
+    sys.exit(1)
+print("✓ 所有语言短描述均 ≤132 字符")
+PY
+
 # ── 构建期注入（不污染仓库） ─────────────────────────────
 GA_MID="${GA_MEASUREMENT_ID:-}"
 GA_SEC="${GA_API_SECRET:-}"
