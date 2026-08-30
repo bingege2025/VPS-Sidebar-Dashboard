@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "VPS Dashboard — Multi-Provider VPS Manager",
-  "description": "Manage VPS servers across multiple providers — status, resources, batch ops, power actions, and expiry reminders in your browser sidebar.",
+  "description": "__MSG_appDescription__",
   "version": "1.6.3",
   "default_locale": "en",
   "permissions": ["storage", "alarms", "notifications"],

@@ -4,7 +4,7 @@
     "description": "Der Name der Erweiterung"
   },
   "appDescription": {
-    "message": "VPS-Server bei mehreren Anbietern verwalten — Status und Ressourcen anzeigen, Stromaktionen ausführen und Ablauferinnerungen erhalten.",
+    "message": "VPS-Server bei mehreren Anbietern verwalten — Status, Ressourcen, Stromaktionen und Ablauferinnerungen in Ihrer Browser-Sidebar.",
     "description": "Die Beschreibung der Erweiterung"
   }
 }
