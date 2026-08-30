@@ -219,63 +219,97 @@ if (themeToggle) {
   });
 }
 
-// ---- Feedback section binding ----
+// ── Low-friction feedback: auto diagnostics + one-tap error report ──
+// Tracks the most recent API error so the user can report it with one click.
+let lastApiError = null;
+function recordApiError(message, panelType) {
+  lastApiError = {
+    message: String(message || '').slice(0, 500),
+    panelType: panelType || null,
+    ts: new Date().toISOString()
+  };
+}
+
+// Anonymous diagnostics (NO credentials/keys/hostnames) to pre-fill feedback,
+// so users don't type environment details and devs don't need follow-ups.
+function collectDiagnostics() {
+  return new Promise(resolve => {
+    try {
+      chrome.storage.local.get(['servers', 'lang', 'analytics_opt_out'], data => {
+        const servers = (data && data.servers) || [];
+        const breakdown = {};
+        servers.forEach(s => {
+          const pt = s.panel_type || 'unknown';
+          breakdown[pt] = (breakdown[pt] || 0) + 1;
+        });
+        const bdStr = Object.keys(breakdown).length
+          ? Object.keys(breakdown).map(k => k + ':' + breakdown[k]).join(', ')
+          : 'none';
+        resolve({
+          version: chrome.runtime.getManifest().version,
+          lang: (data && data.lang) || (window.currentLang || 'en'),
+          serverCount: servers.length,
+          providerBreakdown: bdStr,
+          analyticsEnabled: data && data.analytics_opt_out ? 'off' : 'on',
+          lastError: lastApiError
+        });
+      });
+    } catch (e) {
+      resolve({
+        version: chrome.runtime.getManifest().version,
+        lang: window.currentLang || 'en',
+        serverCount: '?', providerBreakdown: '?', analyticsEnabled: '?',
+        lastError: lastApiError
+      });
+    }
+  });
+}
 
 const GITHUB_NEW_ISSUE_URL = 'https://github.com/bingege2025/VPS-Sidebar-Dashboard/issues/new';
 const DEV_EMAIL = 'renyanbin.wang@gmail.com';
 
-// Pre-filled GitHub issue templates — minimize what the user has to type so they can submit in seconds.
-function buildIssueUrl(type) {
+// One-tap report of the last API error, with diagnostics pre-filled.
+async function reportThisError() {
+  const diag = await collectDiagnostics();
+  const version = diag.version;
+  const prefix = (lastApiError && lastApiError.panelType) ? '[' + lastApiError.panelType + '] ' : '';
+  const title = '[Bug] ' + prefix + 'Auto-reported error';
+  const lines = [
+    '**Error message**',
+    '```',
+    (lastApiError && lastApiError.message) || '(no error captured)',
+    '```',
+    '',
+    '**What were you doing?**',
+    '- ',
+    '',
+    '**Expected behavior**',
+    '- ',
+    '',
+    '**Actual behavior**',
+    '- ',
+    '',
+    '---',
+    `Extension Version: v${version}`,
+    `Language: ${diag.lang}`,
+    `Browser: ${navigator.userAgent}`,
+    `Configured servers: ${diag.serverCount} (${diag.providerBreakdown})`,
+    `Analytics: ${diag.analyticsEnabled}` + (lastApiError ? `; captured at: ${lastApiError.ts}` : ''),
+    '',
+    'Please do not include API keys, API hashes, tokens, IP addresses, or hostnames.'
+  ];
+  chrome.tabs.create({ url: `${GITHUB_NEW_ISSUE_URL}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(lines.join('\n'))}` });
+}
+
+// Open the anonymous, no-login quick feedback page (landing site).
+// feedbackType (optional) preselects a radio on the page: bug | feature | provider | other.
+function openQuickFeedback(feedbackType) {
   const version = chrome.runtime.getManifest().version;
   const lang = window.currentLang || 'en';
-  const ua = navigator.userAgent;
-
-  let title, body;
-  if (type === 'provider') {
-    title = '[Provider Request] ';
-    body = [
-      'Thanks for helping improve VPS Dashboard! Just tell us which provider you would like — everything else is optional.',
-      '',
-      '**Which provider?**',
-      '- Provider / brand name: ',
-      '- Panel or API type (SolusVM, Virtualizor, custom, etc.): ',
-      '- Public API documentation URL (optional): ',
-      '',
-      '**Why do you need it?** (optional, one line is fine)',
-      '- ',
-      '',
-      '---',
-      `Extension Version: v${version}`,
-      `Language: ${lang}`,
-      '',
-      'Please do not include API keys, API hashes, tokens, IP addresses, or hostnames.'
-    ].join('\n');
-  } else { // 'bug'
-    title = '[Bug] ';
-    body = [
-      '**What happened?**',
-      '(steps to reproduce, if any)',
-      '',
-      '**Expected behavior**',
-      '- ',
-      '',
-      '**Actual behavior**',
-      '- ',
-      '',
-      '**Provider / panel**',
-      '- Provider: ',
-      '- Panel type: (auto-detected)',
-      '',
-      '---',
-      `Extension Version: v${version}`,
-      `Language: ${lang}`,
-      `Browser: ${ua}`,
-      '',
-      'Please do not include API keys, API hashes, tokens, IP addresses, or hostnames.'
-    ].join('\n');
-  }
-
-  return `${GITHUB_NEW_ISSUE_URL}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+  const cid = 'anon-' + Date.now().toString(36);
+  let url = `https://a.meng.mom/feedback?lang=${encodeURIComponent(lang)}&v=${encodeURIComponent(version)}&cid=${encodeURIComponent(cid)}`;
+  if (feedbackType) url += `&type=${encodeURIComponent(feedbackType)}`;
+  chrome.tabs.create({ url });
 }
 
 function initFeedbackSection() {
@@ -283,15 +317,19 @@ function initFeedbackSection() {
   const feedbackProviderText = $('feedbackProviderText');
   const feedbackBugText = $('feedbackBugText');
   const feedbackEmailText = $('feedbackEmailText');
+  const feedbackQuickText = $('feedbackQuickText');
   const feedbackProviderBtn = $('feedbackProviderBtn');
   const feedbackBugBtn = $('feedbackBugBtn');
   const feedbackEmailBtn = $('feedbackEmailBtn');
+  const feedbackQuickBtn = $('feedbackQuickBtn');
   if (feedbackProviderText) feedbackProviderText.textContent = t('feedbackProvider');
   if (feedbackBugText) feedbackBugText.textContent = t('feedbackBug');
   if (feedbackEmailText) feedbackEmailText.textContent = t('feedbackEmail');
+  if (feedbackQuickText) feedbackQuickText.textContent = t('feedbackQuick');
   if (feedbackProviderBtn) feedbackProviderBtn.title = t('feedbackProviderTitle');
   if (feedbackBugBtn) feedbackBugBtn.title = t('feedbackBugTitle');
   if (feedbackEmailBtn) feedbackEmailBtn.title = t('feedbackEmailTitle');
+  if (feedbackQuickBtn) feedbackQuickBtn.title = t('feedbackQuickTitle');
 }
 
 // Bind feedback button clicks
@@ -299,7 +337,7 @@ const feedbackProviderBtn = $('feedbackProviderBtn');
 if (feedbackProviderBtn) {
   feedbackProviderBtn.addEventListener('click', e => {
     e.preventDefault();
-    chrome.tabs.create({ url: buildIssueUrl('provider') });
+    openQuickFeedback('provider');
   });
 }
 
@@ -307,7 +345,16 @@ const feedbackBugBtn = $('feedbackBugBtn');
 if (feedbackBugBtn) {
   feedbackBugBtn.addEventListener('click', e => {
     e.preventDefault();
-    chrome.tabs.create({ url: buildIssueUrl('bug') });
+    openQuickFeedback('bug');
+  });
+}
+
+const feedbackQuickBtn = $('feedbackQuickBtn');
+if (feedbackQuickBtn) {
+  feedbackQuickBtn.addEventListener('click', e => {
+    e.preventDefault();
+    if (typeof Analytics !== 'undefined') Analytics.contactDev().catch(() => {});
+    openQuickFeedback();
   });
 }
 
@@ -315,6 +362,7 @@ const feedbackEmailBtn = $('feedbackEmailBtn');
 if (feedbackEmailBtn) {
   feedbackEmailBtn.addEventListener('click', e => {
     e.preventDefault();
+    if (typeof Analytics !== 'undefined') Analytics.contactDev().catch(() => {});
     const version = chrome.runtime.getManifest().version;
     const subject = encodeURIComponent(`VPS Dashboard v${version} - Feedback`);
     const body = encodeURIComponent(`\n\n---\nExtension Version: v${version}\nBrowser: ${navigator.userAgent}\nTimestamp: ${new Date().toISOString()}`);
@@ -360,6 +408,7 @@ function exportCurrentServerICS(t) {
       expirySource: s.expirySource
     }], { thresholds });
     downloadICS(`vps-expiry-${(s.name || 'server').replace(/[^\w\-]+/g, '_')}.ics`, ics);
+    if (typeof Analytics !== 'undefined') Analytics.exportIcs(s.panel_type).catch(() => {});
     popupToast(t('icsExported'));
   });
 }
@@ -367,6 +416,10 @@ function exportCurrentServerICS(t) {
 // ---- Main initialization (fully synchronous, no await) ----
 
 (function init() {
+  // Delegate "打开插件" to the background service worker. A popup page can be
+  // closed before an async fetch completes, which would silently drop the event;
+  // the SW stays alive while handling the message, so the GA4 request goes through.
+  try { chrome.runtime.sendMessage({ action: 'analytics_opened' }); } catch (e) {}
   const main = $('main');
   const statusBar = $('statusBar');
   if (!main) return;
@@ -374,7 +427,7 @@ function exportCurrentServerICS(t) {
   const t = window.t;
 
   // 将 lang 与其他数据一起读取，确保渲染前语言已就绪
-  safeStorageGet(['servers', 'currentServerId', 'defaultServerId', 'tags', 'privacyModeEnabled', 'darkModeEnabled', 'apiUrl', 'apiKey', 'apiHash', 'lang', 'recentServerIds', 'expiryThresholds'], data => {
+  safeStorageGet(['servers', 'currentServerId', 'defaultServerId', 'tags', 'privacyModeEnabled', 'darkModeEnabled', 'apiUrl', 'apiKey', 'apiHash', 'lang', 'recentServerIds', 'expiryThresholds', 'onboardingSkipped'], data => {
     if (!data) {
       // Storage timed out or errored — show retry prompt
       main.innerHTML = `
@@ -441,7 +494,7 @@ function exportCurrentServerICS(t) {
 
     data.servers = normalizedServers;
 
-    if (!data.servers || data.servers.length === 0) {
+    function showNoConfigView() {
       main.innerHTML = `
         <div class="no-config">
           <p>${t('noConfig')}</p>
@@ -451,6 +504,62 @@ function exportCurrentServerICS(t) {
       if (goConfig) goConfig.addEventListener('click', e => { e.preventDefault(); chrome.runtime.openOptionsPage(); });
       if (statusBar) statusBar.style.display = 'none';
       updateTriggerDisplay(null);
+    }
+
+    function renderOnboarding() {
+      // Onboarding providers — keep in sync with options.html #panelType options.
+      const ONBOARDING_PROVIDERS = ['solusvm', 'solusvm2', 'ec2', 'lightsail', 'virtfusion', 'virtualizor', 'proxmox', 'hetzner', 'digitalocean'];
+      const ONBOARDING_GUIDE_BASE = 'https://a.meng.mom';
+      const cards = ONBOARDING_PROVIDERS.map(pt => {
+        const meta = (typeof getProviderMeta === 'function') ? getProviderMeta(pt) : { name: pt, logo: 'logos/default.svg' };
+        const safeName = (meta.name || pt).replace(/"/g, '&quot;');
+        return '<button class="provider-card" data-panel="' + pt + '" type="button">' +
+                 '<img class="provider-logo" src="' + meta.logo + '" alt="' + safeName + '" />' +
+                 '<span class="provider-name">' + safeName + '</span>' +
+               '</button>';
+      }).join('');
+      main.innerHTML = `
+        <div class="onboarding">
+          <div class="onboarding-inner">
+            <h1 class="onboarding-title">${t('onboardingTitle')}</h1>
+            <p class="onboarding-subtitle">${t('onboardingSubtitle')}</p>
+            <p class="onboarding-question">${t('onboardingQuestion')}</p>
+            <div class="provider-grid">${cards}</div>
+            <div class="onboarding-footer">
+              <a href="${ONBOARDING_GUIDE_BASE}/guides/solusvm-v1.html?lang=${encodeURIComponent(window.currentLang || 'en')}" id="onboardingGuide" target="_blank" rel="noopener" class="onboarding-guide">${t('onboardingGuide')}</a>
+              <span class="onboarding-sep">·</span>
+              <a href="#" id="onboardingSkip" class="onboarding-skip">${t('onboardingSkip')}</a>
+            </div>
+          </div>
+        </div>`;
+      if (typeof Analytics !== 'undefined') Analytics.onboardingShown().catch(() => {});
+      main.querySelectorAll('.provider-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const pt = card.getAttribute('data-panel');
+          if (typeof Analytics !== 'undefined') Analytics.onboardingProviderPicked(pt).catch(() => {});
+          chrome.storage.local.set({ pendingPanelType: pt }, () => chrome.runtime.openOptionsPage());
+        });
+      });
+      const guide = $('onboardingGuide');
+      if (guide) guide.addEventListener('click', () => {
+        if (typeof Analytics !== 'undefined') Analytics.onboardingGuideOpened('solusvm').catch(() => {});
+      });
+      const skip = $('onboardingSkip');
+      if (skip) skip.addEventListener('click', e => {
+        e.preventDefault();
+        if (typeof Analytics !== 'undefined') Analytics.onboardingSkip().catch(() => {});
+        chrome.storage.local.set({ onboardingSkipped: true }, () => showNoConfigView());
+      });
+      if (statusBar) statusBar.style.display = 'none';
+      updateTriggerDisplay(null);
+    }
+
+    if (!data.servers || data.servers.length === 0) {
+      if (data.onboardingSkipped) {
+        showNoConfigView();
+      } else {
+        renderOnboarding();
+      }
       return;
     }
 
@@ -696,11 +805,15 @@ function loadFresh(currentId, cacheKey, cachedData, t, main, statusBar) {
       statusBar.textContent = t('lastUpdated', { time: freshData.lastUpdated });
     });
   }).catch(err => {
+    const currentServer = (allServers || []).find(s => s.id === currentId);
+    recordApiError(err.message, currentServer ? currentServer.panel_type : null);
     if (cachedData) {
       statusBar.style.display = 'block';
       statusBar.textContent = t('updateFail', { error: err.message });
     } else {
-      main.innerHTML = `<div class="error">❌ ${err.message}</div>`;
+      main.innerHTML = `<div class="error">❌ ${escapeHtml(err.message)}<br><button id="reportErrorBtn" class="btn-error-report" title="${t('reportThisErrorTitle')}">${t('reportThisError')}</button></div>`;
+      const rb = $('reportErrorBtn');
+      if (rb) rb.addEventListener('click', e => { e.preventDefault(); reportThisError(); });
     }
   });
 }
@@ -934,6 +1047,18 @@ function showInlineConfirm({ message, actionLabel, danger, onConfirm }) {
 
 function doAction(action, label, t, main) {
   t = t || window.t;
+
+  // Anonymous usage analytics: resolve current server provider, fire one event.
+  // Only provider type + action are sent; never server name / IP / instance id.
+  if (typeof Analytics !== 'undefined') {
+    chrome.storage.local.get(['servers', 'currentServerId'], function (data) {
+      var list = (data && data.servers) || [];
+      var id = data && data.currentServerId;
+      var s = list.find(function (x) { return x.id === id; }) || list[0];
+      if (s) Analytics.serverAction(s.panel_type, action);
+    });
+  }
+
   const statusBar = $('statusBar');
   if (statusBar) {
     statusBar.style.display = 'block';
@@ -963,6 +1088,18 @@ function doBulkAction(action, label, t, main, serverIds) {
   main = main || $('main');
   const resultHost = $('bulkResultHost');
   if (resultHost) resultHost.innerHTML = `<span style="color:#999;">⏳ ${label}...</span>`;
+
+  // Anonymous usage analytics (plan A): one event per affected server, so the
+  // per-provider breakdown is accurate. Only provider type + action are sent.
+  if (typeof Analytics !== 'undefined') {
+    chrome.storage.local.get(['servers'], function (data) {
+      var list = (data && data.servers) || [];
+      serverIds.forEach(function (sid) {
+        var s = list.find(function (x) { return x.id === sid; });
+        if (s) Analytics.batchAction(s.panel_type, action);
+      });
+    });
+  }
 
   sendMessage(action, { serverIds }).then(res => {
     if (!res.success) {

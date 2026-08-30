@@ -15,7 +15,12 @@ const PROVIDER_GUIDE_PATHS = {
   solusvm: '/guides/solusvm-v1.html',
   ec2: '/guides/aws-ec2.html',
   solusvm2: '/guides/solusvm-v2.html',
-  virtfusion: '/guides/virtfusion.html'
+  virtfusion: '/guides/virtfusion.html',
+  virtualizor: '/guides/virtualizor.html',
+  proxmox: '/guides/proxmox.html',
+  hetzner: '/guides/hetzner.html',
+  digitalocean: '/guides/digitalocean.html',
+  lightsail: '/guides/lightsail.html'
 };
 
 // HTML escape to prevent XSS
@@ -99,6 +104,8 @@ function applyTranslations() {
   $('i18n_hintThresholds').textContent = t('hintThresholds');
   $('i18n_expiryApiNote').textContent = t('expiryApiNote');
   $('i18n_labelExpiryDisabled').textContent = t('labelExpiryDisabled');
+  $('i18n_labelAnalytics').textContent = t('labelAnalytics');
+  $('i18n_hintAnalytics').textContent = t('hintAnalytics');
   $('testReminderBtn').textContent = t('btnTestReminder');
   $('exportIcsBtn').textContent = t('btnExportIcs');
   $('i18n_labelExpiry').textContent = t('labelExpiry');
@@ -139,23 +146,31 @@ function updatePanelHelp() {
   const guidePath = PROVIDER_GUIDE_PATHS[panelType];
   const guideWrap = document.querySelector('.provider-guide');
   const guideLink = $('providerGuideLink');
-  // Hide the callout when this provider has no setup guide yet.
-  if (!guidePath) {
-    if (guideWrap) guideWrap.style.display = 'none';
-    return;
-  }
-  if (guideWrap) guideWrap.style.display = '';
-  if ($('providerGuideTitle')) {
-    $('providerGuideTitle').textContent = t('providerGuideTitle', { provider: providerMeta.name });
-  }
-  if ($('providerGuideText')) {
-    $('providerGuideText').textContent = t('providerGuideText');
-  }
-  if (guideLink) {
-    // Pass the current plugin UI language so the landing guide opens in the same language.
-    const pluginLang = window.currentLang || 'en';
-    guideLink.href = LANDING_BASE_URL + guidePath + '?lang=' + encodeURIComponent(pluginLang);
-    guideLink.textContent = t('providerGuideLink');
+  // Providers without a setup guide hide the callout. Do NOT return early here:
+  // the field labels below must still update for every provider.
+  if (guidePath) {
+    if (guideWrap) guideWrap.style.display = '';
+    if ($('providerGuideTitle')) {
+      $('providerGuideTitle').textContent = t('providerGuideTitle', { provider: providerMeta.name });
+    }
+    if ($('providerGuideText')) {
+      $('providerGuideText').textContent = t('providerGuideText');
+    }
+    if (guideLink) {
+      // Pass the current plugin UI language so the landing guide opens in the same language.
+      const pluginLang = window.currentLang || 'en';
+      guideLink.href = LANDING_BASE_URL + guidePath + '?lang=' + encodeURIComponent(pluginLang);
+      guideLink.textContent = t('providerGuideLink');
+      if (!guideLink._analyticsBound) {
+        guideLink._analyticsBound = true;
+        guideLink.addEventListener('click', () => {
+          const p = $('panelType') ? $('panelType').value : 'solusvm';
+          if (typeof Analytics !== 'undefined') Analytics.viewGuide(p).catch(() => {});
+        });
+      }
+    }
+  } else if (guideWrap) {
+    guideWrap.style.display = 'none';
   }
 
   if (panelType === 'lightsail' || panelType === 'ec2') {
@@ -329,7 +344,7 @@ function showNewForm() {
 // Load configuration and migrate from legacy versions
 function loadConfig() {
   try {
-    chrome.storage.local.get(['servers', 'currentServerId', 'defaultServerId', 'apiUrl', 'apiKey', 'apiHash', 'tags', 'lang', 'darkModeEnabled'], data => {
+    chrome.storage.local.get(null, data => {
       if (chrome.runtime.lastError) {
         const errMsg = chrome.runtime.lastError.message;
         if (errMsg.includes('context invalidated')) {
@@ -395,11 +410,27 @@ function loadConfig() {
         cb.checked = thresholds.indexOf(Number(cb.value)) !== -1;
       });
 
+      // Analytics opt-out switch: analytics_opt_out === true means analytics disabled.
+      const analyticsOn = data.analytics_opt_out !== true;
+      $('analyticsEnabled').checked = analyticsOn;
+
       servers = normalized;
       defaultServerId = data.defaultServerId || null;
       
       applyTranslations();
-      
+
+      // Onboarding deep-link: if the user picked a provider from the popup's
+      // "Get Started" screen, open the Add Server form preselected to it.
+      const pendingPanel = data.pendingPanelType;
+      // Accept every supported provider, not just the ones that have a setup guide.
+      if (pendingPanel && PROVIDER_META[pendingPanel]) {
+        chrome.storage.local.remove(['pendingPanelType']);
+        showNewForm();
+        $('panelType').value = pendingPanel;
+        updatePanelHelp();
+        return;
+      }
+
       const activeId = data.currentServerId || (servers[0] ? servers[0].id : null);
       if (activeId) {
         selectServer(activeId);
@@ -482,6 +513,7 @@ function saveServer() {
     persistServers(servers, currentId, () => {
       renderServerList();
       selectServer(editingServerId);
+      if (typeof Analytics !== 'undefined') Analytics.saveServer(panelType).catch(() => {});
       showMsg(t(isEditing ? 'msgSaved' : 'msgAdded'), true);
     });
     });
@@ -575,7 +607,11 @@ function testConnection() {
   showMsg(t('msgTesting'), true);
   
   const tempConfig = { apiUrl, apiKey, apiHash, panel_type: panelType };
-  
+
+  // Anonymous usage analytics: count test-connection clicks per provider type.
+  // Only provider type is sent; never credentials, URL, or server identity.
+  if (typeof Analytics !== 'undefined') Analytics.testConnection(panelType);
+
   try {
     chrome.runtime.sendMessage({ action: 'testConnection', config: tempConfig }, resp => {
       if (chrome.runtime.lastError) {
@@ -655,6 +691,7 @@ function exportConfig() {
     link.click();
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+    if (typeof Analytics !== 'undefined') Analytics.exportConfig().catch(() => {});
     showMsg(t('msgExportOk'), true);
   });
 }
@@ -689,6 +726,7 @@ function exportAllICS() {
     const ics = buildICS(withExpiry.map(enrichServerForICS), { thresholds });
     const date = new Date().toISOString().slice(0, 10);
     downloadICS(`vps-dashboard-expiry-${date}.ics`, ics);
+    if (typeof Analytics !== 'undefined') Analytics.exportIcs('all').catch(() => {});
     showMsg(t('msgExportIcsOk', { count: withExpiry.length }), true);
   });
 }
@@ -756,6 +794,7 @@ function importConfigFile(file) {
           defaultServerId = nextConfig.defaultServerId;
           editingServerId = nextConfig.currentServerId;
           allTags = nextConfig.tags;
+          if (typeof Analytics !== 'undefined') Analytics.importConfig().catch(() => {});
           // Refresh threshold checkboxes from storage (global prefs are not part of config export)
           chrome.storage.local.get(['expiryThresholds'], stored => {
             const thresholds = (Array.isArray(stored.expiryThresholds) && stored.expiryThresholds.length)
@@ -805,6 +844,19 @@ $('languageSelect').addEventListener('change', e => {
 // Persist master reminder switch
 $('remindersEnabled').addEventListener('change', e => {
   chrome.storage.local.set({ remindersEnabled: !!e.target.checked });
+  if (e.target.checked && typeof Analytics !== 'undefined') Analytics.expiryReminderEnabled().catch(() => {});
+});
+
+// Persist analytics opt-out switch (checked = analytics on; unchecked = disabled)
+$('analyticsEnabled').addEventListener('change', e => {
+  const willEnable = e.target.checked;
+  const msg = willEnable ? t('confirmAnalyticsOn') : t('confirmAnalyticsOff');
+  if (!confirm(msg)) {
+    // 用户取消，恢复开关状态
+    e.target.checked = !willEnable;
+    return;
+  }
+  chrome.storage.local.set({ analytics_opt_out: !willEnable });
 });
 
 // Persist multi-threshold reminder windows

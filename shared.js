@@ -141,6 +141,7 @@ const PROVIDER_META = {
   ec2:          { name: 'AWS EC2',       logo: 'logos/ec2.svg' },
   lightsail:    { name: 'AWS Lightsail', logo: 'logos/lightsail.svg' },
   virtfusion:   { name: 'VirtFusion',    logo: 'logos/virtfusion.svg' },
+  virtualizor:   { name: 'Virtualizor',   logo: 'logos/default.svg' },
   proxmox:      { name: 'Proxmox VE',    logo: 'logos/proxmox.svg' },
   hetzner:      { name: 'Hetzner',       logo: 'logos/hetzner.svg' },
   digitalocean: { name: 'DigitalOcean',  logo: 'logos/digitalocean.svg' }

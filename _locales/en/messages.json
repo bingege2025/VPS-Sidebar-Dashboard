@@ -4,7 +4,7 @@
     "description": "The name of the extension"
   },
   "appDescription": {
-    "message": "Manage VPS servers across SolusVM, VirtFusion, and AWS EC2 — view status, resources, and control multiple servers in your browser.",
+    "message": "Manage VPS servers across multiple providers — view status and resources, perform power actions, and get expiry reminders in your browser.",
     "description": "The description of the extension"
   }
 }
