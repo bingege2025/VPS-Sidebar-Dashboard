@@ -46,8 +46,10 @@ if (problems.length) {
 const required = [
   'extension_opened',
   'onboarding_shown', 'onboarding_provider_picked', 'onboarding_skip', 'onboarding_guide_opened',
-  'save_server', 'provider_connected', 'test_connection',
-  'server_action', 'batch_action', 'export_ics', 'export_config', 'import_config',
+  'configuration_started', 'connection_test_started', 'connection_test_succeeded', 'connection_test_failed',
+  'server_saved', 'server_save_failed', 'configuration_completed', 'first_server_viewed',
+  'server_action', 'batch_action', 'export_ics', 'export_config',
+  'config_import_started', 'config_import_succeeded', 'config_import_failed',
   'view_guide', 'expiry_reminder_enabled', 'expiry_reminder_fired',
   'request_provider', 'report_bug', 'contact_dev'
 ];

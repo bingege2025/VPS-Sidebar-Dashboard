@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "VPS Dashboard — Multi-Provider VPS Manager",
   "description": "__MSG_appDescription__",
-  "version": "1.6.3",
+  "version": "1.6.5",
   "default_locale": "en",
   "permissions": ["storage", "alarms", "notifications"],
   "host_permissions": ["https://*.amazonaws.com/*", "https://www.google-analytics.com/*", "https://region1.google-analytics.com/*", "https://*/*", "http://*/*"],

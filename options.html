@@ -188,6 +188,110 @@
     body.dark .toggle-vis { color: #6b7280; }
     body.dark .toggle-vis:hover { color: #8ab4ff; }
     .hint { font-size: 11px; color: #9ca3af; margin-top: 5px; line-height: 1.4; }
+    .provider-card-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .provider-card {
+      min-height: 78px;
+      padding: 10px;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      align-items: center;
+      gap: 9px;
+      text-align: left;
+      transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    }
+    .provider-card:hover {
+      border-color: #93c5fd;
+      background: #f8fbff;
+      transform: translateY(-1px);
+    }
+    .provider-card.active {
+      border-color: #2563eb;
+      background: #eff6ff;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+    }
+    .provider-card-logo {
+      width: 30px;
+      height: 30px;
+      border-radius: 7px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    .provider-card-copy {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .provider-card-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #111827;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .provider-card-meta {
+      font-size: 10.5px;
+      color: #6b7280;
+      line-height: 1.3;
+    }
+    .advanced-panel {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .advanced-panel summary {
+      list-style: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 38px;
+      color: #374151;
+      font-size: 13px;
+      font-weight: 700;
+      user-select: none;
+    }
+    .advanced-panel summary::-webkit-details-marker {
+      display: none;
+    }
+    .advanced-chevron {
+      color: #9ca3af;
+      transition: transform 0.15s ease;
+    }
+    .advanced-panel[open] .advanced-chevron {
+      transform: rotate(180deg);
+    }
+    .advanced-content {
+      padding-top: 14px;
+    }
+    .provider-select-fallback {
+      display: none;
+    }
+    .form-group.invalid input,
+    .form-group.invalid select {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239,68,68,0.10);
+    }
+    .field-error {
+      display: none;
+      margin-top: 6px;
+      color: #dc2626;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    .field-error.show {
+      display: block;
+    }
     .provider-guide {
       margin-top: 10px;
       padding: 12px 14px;
@@ -223,14 +327,14 @@
     .provider-guide-link:hover { color: #1d4ed8; text-decoration: underline; }
 
     .prefs-card {
-      margin-bottom: 24px; padding: 16px 18px;
-      border: 1px solid #e5e7eb; border-radius: 12px;
-      background: #f8fafc;
+      margin-top: 18px; margin-bottom: 0; padding: 16px 0 0;
+      border-top: 1px solid #e5e7eb; border-radius: 0;
+      background: transparent;
     }
     .prefs-title {
       font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 12px;
     }
-    body.dark .prefs-card { background: #1e2229; border-color: #2e333d; }
+    body.dark .prefs-card { background: transparent; border-color: #2e333d; }
     body.dark .prefs-title { color: #d4d9e0; }
 
     .form-actions { display: flex; gap: 10px; margin-top: 26px; }
@@ -297,6 +401,15 @@
     body.dark .provider-guide-title { color: #bfdbfe; }
     body.dark .provider-guide-text { color: #94a3b8; }
     body.dark .provider-guide-link { color: #8ab4ff; }
+    body.dark .provider-card { background: #1a1d23; border-color: #3a404c; }
+    body.dark .provider-card:hover { background: #172033; border-color: #60a5fa; }
+    body.dark .provider-card.active { background: #243c5e; border-color: #3b82f6; }
+    body.dark .provider-card-name { color: #e6e9ef; }
+    body.dark .provider-card-meta { color: #94a3b8; }
+    body.dark .advanced-panel { border-top-color: #2e333d; }
+    body.dark .advanced-panel summary { color: #d4d9e0; }
+    body.dark .advanced-chevron { color: #7d8694; }
+    body.dark .field-error { color: #fca5a5; }
     body.dark .config-tools { border-top-color: #2e333d; }
     body.dark .config-tools-title { color: #d4d9e0; }
     body.dark .btn-add { background: #1d2f49; border-color: #3b82f6; color: #8ab4ff; }
@@ -332,6 +445,20 @@
       .card,
       .right-panel {
         padding: 22px;
+      }
+      .provider-card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 520px) {
+      .provider-card-grid {
+        grid-template-columns: 1fr;
+      }
+      .form-actions {
+        flex-direction: column;
+      }
+      .form-actions button {
+        width: 100%;
       }
     }
   </style>
@@ -387,59 +514,12 @@
     
     <!-- Right Panel: Form Card -->
     <div class="right-panel card">
-      <!-- Global Preferences -->
-      <div class="prefs-card">
-        <div class="prefs-title" id="i18n_prefsTitle">Preferences</div>
-
-        <div class="form-group" style="margin-bottom: 0;">
-          <label class="switch-row">
-            <span>
-              <span id="i18n_labelReminders">Expiry reminders</span>
-              <span id="i18n_hintReminders" class="hint">Send desktop notifications before a server expires.</span>
-            </span>
-            <label class="switch">
-              <input type="checkbox" id="remindersEnabled" checked>
-              <span class="slider"></span>
-            </label>
-          </label>
-        </div>
-
-        <div class="form-group" id="thresholdsGroup">
-          <label id="i18n_labelThresholds">Remind me at (days before expiry)</label>
-          <div class="threshold-chips">
-            <label class="chip-check"><input type="checkbox" class="threshold-cb" value="3"><span>3</span></label>
-            <label class="chip-check"><input type="checkbox" class="threshold-cb" value="7"><span>7</span></label>
-            <label class="chip-check"><input type="checkbox" class="threshold-cb" value="30"><span>30</span></label>
-          </div>
-          <div id="i18n_hintThresholds" class="hint">Pick one or more windows. Expired servers remind you once per day.</div>
-          <button id="testReminderBtn" class="btn-tool" type="button" style="margin-top:10px;">Send test notification</button>
-        </div>
-
-        <div class="form-group" style="margin-top:14px; margin-bottom: 0;">
-          <div class="switch-row">
-            <span>
-              <span id="i18n_labelAnalytics">Anonymous usage analytics</span>
-              <span id="i18n_hintAnalytics" class="hint">Help us improve the product. Only the feature name and provider type are sent; turn off anytime.</span>
-            </span>
-            <label class="switch">
-              <input type="checkbox" id="analyticsEnabled" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-        </div>
-      </div>
-
       <div id="formTitle" class="form-title">Add New Server</div>
-      
-      <div class="form-group">
-        <label id="i18n_labelName">Server Alias</label>
-        <input type="text" id="serverName" placeholder="e.g., Los Angeles 1">
-        <div id="i18n_hintName" class="hint">Give this server a memorable name</div>
-      </div>
-      
-      <div class="form-group">
+
+      <div class="form-group" id="panelTypeGroup">
         <label id="i18n_labelPanelType">Panel Type</label>
-        <select id="panelType">
+        <div id="providerCards" class="provider-card-grid" aria-label="Panel Type"></div>
+        <select id="panelType" class="provider-select-fallback">
           <option value="solusvm" selected>SolusVM v1</option>
           <option value="ec2">AWS EC2</option>
           <option value="lightsail">AWS Lightsail (experimental)</option>
@@ -451,6 +531,7 @@
           <option value="digitalocean">DigitalOcean (experimental)</option>
         </select>
         <div id="i18n_hintPanelType" class="hint">Select the control panel this VPS uses (more types coming soon)</div>
+        <div id="panelTypeError" class="field-error"></div>
         <div class="provider-guide">
           <div class="provider-guide-copy">
             <div id="providerGuideTitle" class="provider-guide-title">Configuration guide</div>
@@ -460,13 +541,14 @@
         </div>
       </div>
       
-      <div class="form-group">
+      <div class="form-group" id="apiUrlGroup">
         <label id="i18n_labelUrl">API URL (SolusVM Panel URL)</label>
         <input type="url" id="apiUrl" placeholder="https://your-vps-panel.com/api/client/command.php">
         <div id="i18n_hintUrl" class="hint">Log in to your VPS control panel → API tab → copy full API endpoint</div>
+        <div id="apiUrlError" class="field-error"></div>
       </div>
       
-      <div class="form-group">
+      <div class="form-group" id="apiKeyGroup">
         <label id="i18n_labelKey">API Key</label>
         <div class="input-group">
           <input type="password" id="apiKey" placeholder="Enter API Key">
@@ -477,9 +559,10 @@
           </button>
         </div>
         <div id="i18n_hintKey" class="hint">Generate in your control panel → API tab</div>
+        <div id="apiKeyError" class="field-error"></div>
       </div>
       
-      <div class="form-group">
+      <div class="form-group" id="apiHashGroup">
         <label id="i18n_labelHash">API Hash</label>
         <div class="input-group">
           <input type="password" id="apiHash" placeholder="Enter API Hash">
@@ -490,36 +573,98 @@
           </button>
         </div>
         <div id="i18n_hintHash" class="hint">Generate in your control panel → API tab</div>
+        <div id="apiHashError" class="field-error"></div>
       </div>
       
-      <div class="form-group">
-        <label id="i18n_labelTags">Tags</label>
-        <input type="text" id="serverTags" placeholder="RN, LA, Production">
-        <div id="i18n_hintTags" class="hint">Separate tags with commas or spaces</div>
-      </div>
+      <details class="advanced-panel" id="advancedSettings">
+        <summary>
+          <span id="i18n_advancedTitle">Optional settings</span>
+          <span class="advanced-chevron" aria-hidden="true">
+            <svg class="lucide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+          </span>
+        </summary>
+        <div class="advanced-content">
+          <div class="form-group" id="serverNameGroup">
+            <label id="i18n_labelName">Server Alias</label>
+            <input type="text" id="serverName" placeholder="e.g., Los Angeles 1">
+            <div id="i18n_hintName" class="hint">Give this server a memorable name</div>
+            <div id="serverNameError" class="field-error"></div>
+          </div>
 
-      <div class="form-group">
-        <label id="i18n_labelExpiry">Expiry Date</label>
-        <input type="date" id="expiryDate">
-        <div id="i18n_hintExpiry" class="hint">Set the date this server or subscription expires. We'll warn you before it lapses.</div>
-        <div id="expiryApiNote" class="expiry-api-note" style="display:none;">
-          <span class="api-dot"></span>
-          <span id="i18n_expiryApiNote">Pulled from the provider API — not guaranteed accurate, please verify manually.</span>
+          <div class="form-group">
+            <label id="i18n_labelTags">Tags</label>
+            <input type="text" id="serverTags" placeholder="RN, LA, Production">
+            <div id="i18n_hintTags" class="hint">Separate tags with commas or spaces</div>
+          </div>
+
+          <div class="form-group">
+            <label id="i18n_labelExpiry">Expiry Date</label>
+            <input type="date" id="expiryDate">
+            <div id="i18n_hintExpiry" class="hint">Set the date this server or subscription expires. We'll warn you before it lapses.</div>
+            <div id="expiryApiNote" class="expiry-api-note" style="display:none;">
+              <span class="api-dot"></span>
+              <span id="i18n_expiryApiNote">Pulled from the provider API — not guaranteed accurate, please verify manually.</span>
+            </div>
+            <label class="switch-row slim">
+              <span id="i18n_labelExpiryDisabled">Disable reminders for this server</span>
+              <label class="switch">
+                <input type="checkbox" id="expiryDisabled">
+                <span class="slider"></span>
+              </label>
+            </label>
+          </div>
+
+          <div class="prefs-card">
+            <div class="prefs-title" id="i18n_prefsTitle">Preferences</div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="switch-row">
+                <span>
+                  <span id="i18n_labelReminders">Expiry reminders</span>
+                  <span id="i18n_hintReminders" class="hint">Send desktop notifications before a server expires.</span>
+                </span>
+                <label class="switch">
+                  <input type="checkbox" id="remindersEnabled" checked>
+                  <span class="slider"></span>
+                </label>
+              </label>
+            </div>
+
+            <div class="form-group" id="thresholdsGroup">
+              <label id="i18n_labelThresholds">Remind me at (days before expiry)</label>
+              <div class="threshold-chips">
+                <label class="chip-check"><input type="checkbox" class="threshold-cb" value="3"><span>3</span></label>
+                <label class="chip-check"><input type="checkbox" class="threshold-cb" value="7"><span>7</span></label>
+                <label class="chip-check"><input type="checkbox" class="threshold-cb" value="30"><span>30</span></label>
+              </div>
+              <div id="i18n_hintThresholds" class="hint">Pick one or more windows. Expired servers remind you once per day.</div>
+              <button id="testReminderBtn" class="btn-tool" type="button" style="margin-top:10px;">Send test notification</button>
+            </div>
+
+            <div class="form-group" style="margin-top:14px; margin-bottom: 0;">
+              <div class="switch-row">
+                <span>
+                  <span id="i18n_labelAnalytics">Anonymous usage analytics</span>
+                  <span id="i18n_hintAnalytics" class="hint">Help us improve the product. Only the feature name and provider type are sent; turn off anytime.</span>
+                </span>
+                <label class="switch">
+                  <input type="checkbox" id="analyticsEnabled" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
-        <label class="switch-row slim">
-          <span id="i18n_labelExpiryDisabled">Disable reminders for this server</span>
-          <label class="switch">
-            <input type="checkbox" id="expiryDisabled">
-            <span class="slider"></span>
-          </label>
-        </label>
-      </div>
+      </details>
 
       <div class="form-actions">
         <button id="saveBtn" class="btn-primary">Save Settings</button>
         <button id="testBtn" class="btn-secondary">Test Connection</button>
       </div>
       <div id="msg" class="msg"></div>
+
     </div>
   </div>
 

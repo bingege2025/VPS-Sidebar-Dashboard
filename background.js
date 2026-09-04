@@ -1951,6 +1951,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     analytics_opened: () => (typeof Analytics !== 'undefined'
       ? Analytics.extensionOpened().then(function () { return {}; })
       : Promise.resolve({})),
+    analytics_onboarding_pick: () => (typeof Analytics !== 'undefined'
+      ? Analytics.onboardingProviderPicked(message.panelType).then(function () { return {}; })
+      : Promise.resolve({})),
+    analytics_onboarding_skip: () => (typeof Analytics !== 'undefined'
+      ? Analytics.onboardingSkip().then(function () { return {}; })
+      : Promise.resolve({})),
     getStatus: getServerStatus,
     getInfo: getServerInfo,
     reboot: rebootServer,
@@ -1959,10 +1965,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     batchRefresh: () => batchRefresh(message.serverIds),
     batchReboot: () => batchAction('reboot', message.serverIds),
     batchShutdown: () => batchAction('shutdown', message.serverIds),
-    testConnection: () => testConnection(message.config).then(result => {
-      if (typeof Analytics !== 'undefined') Analytics.providerConnected(getPanelType(message.config)).catch(() => {});
-      return result;
-    }),
+    testConnection: () => testConnection(message.config),
     testReminder: () => Promise.resolve(sendSampleReminder())
   };
 
@@ -2054,10 +2057,14 @@ async function checkExpiryReminders() {
 // carries a build-time placeholder, never a real domain.
 function setupUninstallUrl() {
   if (!chrome.runtime || !chrome.runtime.setUninstallURL) return;
+  var uninstallBaseUrl = '__UNINSTALL_URL__';
+  if (!uninstallBaseUrl || uninstallBaseUrl.indexOf('__') !== -1) uninstallBaseUrl = 'https://a.meng.mom';
+  if (!/^https?:\/\//i.test(uninstallBaseUrl)) uninstallBaseUrl = 'https://' + uninstallBaseUrl;
+  uninstallBaseUrl = uninstallBaseUrl.replace(/\/+$/, '');
   Analytics.getClientId().then(function (cid) {
     chrome.storage.local.get(['lang'], function (data) {
       var lang = (data && data.lang) || 'en';
-      var url = 'https://__UNINSTALL_URL__/uninstall?src=vps-dashboard&v=1&cid=' + encodeURIComponent(cid) + '&lang=' + encodeURIComponent(lang);
+      var url = uninstallBaseUrl + '/uninstall/?src=vps-dashboard&v=1&cid=' + encodeURIComponent(cid) + '&lang=' + encodeURIComponent(lang);
       chrome.runtime.setUninstallURL(url, function () {
         if (chrome.runtime.lastError) console.warn('[analytics] setUninstallURL failed', chrome.runtime.lastError);
       });

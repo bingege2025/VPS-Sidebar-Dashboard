@@ -3,12 +3,12 @@
 #
 # 构建期注入（密钥不进仓库）：
 #   从环境变量读取 GA 凭据与卸载页，替换源码中的占位符后打包。
-#   未设置时保留占位符（埋点静默空转），源码与 git 历史始终不含真实值。
+#   未设置 GA 凭据时，若源码仍为占位符则埋点静默空转；卸载页默认使用 a.meng.mom。
 #
 # 用法：
 #   export GA_MEASUREMENT_ID="G-XXXXXXX"
 #   export GA_API_SECRET="AbC_1a2b3c4d5e6f7"
-#   export UNINSTALL_URL="landing.example.com"   # 可选
+#   export UNINSTALL_URL="https://a.meng.mom"    # 可选；未设置时使用该默认落地页
 #   export ANALYTICS_DEBUG="true"                # 可选：本地验证埋点（debug 端点，不污染生产）
 #   bash package-extension.sh
 set -e
@@ -65,15 +65,20 @@ if [ -n "$GA_MID" ] && [ -n "$GA_SEC" ]; then
   GA_API_SECRET="$GA_SEC" perl -0pi -e 's/__GA_API_SECRET__/$ENV{GA_API_SECRET}/g' "$BUILD_DIR/analytics.js"
   echo "✓ Injected GA credentials into analytics.js"
 else
-  echo "⚠️  GA_MEASUREMENT_ID / GA_API_SECRET 未设置 → analytics.js 保留占位符（埋点将空转，不发数据）。"
-  echo "   启用埋点：export GA_MEASUREMENT_ID=G-XXX; export GA_API_SECRET=YYY; 再打包。"
+  if grep -qE '__GA_MEASUREMENT_ID__|__GA_API_SECRET__' "$BUILD_DIR/analytics.js"; then
+    echo "⚠️  GA_MEASUREMENT_ID / GA_API_SECRET 未设置 → analytics.js 保留占位符（埋点将空转，不发数据）。"
+    echo "   启用埋点：export GA_MEASUREMENT_ID=G-XXX; export GA_API_SECRET=YYY; 再打包。"
+  else
+    echo "✓ GA credentials already present in analytics.js"
+  fi
 fi
 
 if [ -n "$UNINSTALL_URL" ]; then
   UNINSTALL_URL="$UNINSTALL_URL" perl -0pi -e 's/__UNINSTALL_URL__/$ENV{UNINSTALL_URL}/g' "$BUILD_DIR/background.js"
   echo "✓ Injected uninstall URL into background.js"
 else
-  echo "⚠️  UNINSTALL_URL 未设置 → 卸载页保留占位符（setUninstallURL 会指向无效域名）。"
+  UNINSTALL_URL="https://a.meng.mom" perl -0pi -e 's/__UNINSTALL_URL__/$ENV{UNINSTALL_URL}/g' "$BUILD_DIR/background.js"
+  echo "✓ UNINSTALL_URL 未设置 → 已注入默认卸载页 https://a.meng.mom/uninstall/"
 fi
 
 # 可选：开发调试模式（默认关闭）。设置 ANALYTICS_DEBUG=true 时，事件发往 GA debug

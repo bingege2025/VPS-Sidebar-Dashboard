@@ -81,6 +81,194 @@ function persistServers(nextServers, currentServerId, callback) {
   }, callback);
 }
 
+function getProviderCredentialSummary(panelType) {
+  if (providerUsesAwsRegion(panelType)) return t('providerCredAws');
+  if (!providerNeedsApiHash(panelType)) return t('providerCredToken');
+  if (panelType === 'virtualizor') return t('providerCredKeyPass');
+  return t('providerCredKeyHash');
+}
+
+function getProviderEndpointSummary(panelType) {
+  if (providerUsesAwsRegion(panelType)) return t('providerEndpointRegion');
+  if (getProviderDefaultApiUrl(panelType)) return t('providerEndpointAuto');
+  if (panelType === 'solusvm2' || panelType === 'virtfusion') return t('providerEndpointServerUrl');
+  return t('providerEndpointPanel');
+}
+
+function getProviderList() {
+  const ordered = (typeof PROVIDER_ORDER !== 'undefined') ? PROVIDER_ORDER : Object.keys(PROVIDER_META);
+  return ordered.filter(panelType => PROVIDER_META[panelType]);
+}
+
+function renderProviderCards() {
+  const wrap = $('providerCards');
+  const select = $('panelType');
+  if (!wrap || !select) return;
+
+  const selected = select.value || 'solusvm';
+  wrap.innerHTML = getProviderList().map(panelType => {
+    const meta = getProviderMeta(panelType);
+    const active = panelType === selected;
+    return `
+      <button type="button" class="provider-card ${active ? 'active' : ''}" data-panel-type="${panelType}" aria-pressed="${active ? 'true' : 'false'}">
+        <img class="provider-card-logo" src="${meta.logo}" alt="">
+        <span class="provider-card-copy">
+          <span class="provider-card-name">${escapeHtml(meta.name)}</span>
+          <span class="provider-card-meta">${escapeHtml(getProviderCredentialSummary(panelType))} · ${escapeHtml(getProviderEndpointSummary(panelType))}</span>
+        </span>
+      </button>
+    `;
+  }).join('');
+}
+
+function updateProviderCards() {
+  const selected = $('panelType') ? $('panelType').value : 'solusvm';
+  document.querySelectorAll('.provider-card').forEach(card => {
+    const active = card.dataset.panelType === selected;
+    card.classList.toggle('active', active);
+    card.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
+function maybePrefillProviderEndpoint(panelType) {
+  const input = $('apiUrl');
+  if (!input) return;
+  const defaultUrl = getProviderDefaultApiUrl(panelType);
+  if (!defaultUrl) return;
+
+  const current = input.value.trim();
+  const defaults = (typeof PROVIDER_DEFAULT_API_URLS !== 'undefined') ? PROVIDER_DEFAULT_API_URLS : {};
+  const knownDefaults = Object.values(defaults);
+  if (!current || knownDefaults.indexOf(current) !== -1) {
+    input.value = defaultUrl;
+  }
+}
+
+function clearFieldErrors() {
+  document.querySelectorAll('.form-group.invalid').forEach(group => {
+    group.classList.remove('invalid');
+  });
+  document.querySelectorAll('.field-error').forEach(el => {
+    el.textContent = '';
+    el.classList.remove('show');
+  });
+}
+
+function setFieldError(inputId, message) {
+  const input = $(inputId);
+  const errorEl = $(`${inputId}Error`);
+  if (input) {
+    const group = input.closest('.form-group');
+    if (group) group.classList.add('invalid');
+    input.setAttribute('aria-invalid', 'true');
+  }
+  if (errorEl) {
+    errorEl.textContent = message;
+    errorEl.classList.add('show');
+  }
+}
+
+function clearFieldInvalidState(inputId) {
+  const input = $(inputId);
+  if (!input) return;
+  input.removeAttribute('aria-invalid');
+  const group = input.closest('.form-group');
+  if (group) group.classList.remove('invalid');
+  const errorEl = $(`${inputId}Error`);
+  if (errorEl) {
+    errorEl.textContent = '';
+    errorEl.classList.remove('show');
+  }
+}
+
+function uniqueServerName(baseName) {
+  const base = baseName || 'VPS';
+  const used = new Set(
+    servers
+      .filter(server => server.id !== editingServerId)
+      .map(server => String(server.name || '').toLowerCase())
+  );
+  if (!used.has(base.toLowerCase())) return base;
+  let suffix = 2;
+  while (used.has(`${base} ${suffix}`.toLowerCase())) suffix += 1;
+  return `${base} ${suffix}`;
+}
+
+function buildAutoServerName(panelType, endpoint) {
+  const meta = getProviderMeta(panelType);
+  if (providerUsesAwsRegion(panelType)) {
+    return uniqueServerName(`${meta.name} ${String(endpoint || '').split('/')[0] || 'Server'}`);
+  }
+  try {
+    const url = new URL(endpoint);
+    return uniqueServerName(`${meta.name} ${url.hostname}`);
+  } catch (e) {
+    return uniqueServerName(`${meta.name} Server`);
+  }
+}
+
+function syncAdvancedPanel(server) {
+  const advanced = $('advancedSettings');
+  if (!advanced) return;
+  advanced.open = Boolean(server && (
+    normalizeTagList(server.tags).length > 0 ||
+    server.expiryDate ||
+    server.expiryDisabled
+  ));
+}
+
+function collectServerForm(options = {}) {
+  clearFieldErrors();
+
+  const panelType = $('panelType').value;
+  const cleanedUrl = normalizeProviderEndpoint(panelType, $('apiUrl').value);
+  const apiKey = $('apiKey').value.trim();
+  const needsHash = providerNeedsApiHash(panelType);
+  const apiHash = needsHash ? $('apiHash').value.trim() : '';
+  const missingText = field => t('msgRequiredField', { field });
+  const errors = [];
+
+  if (!cleanedUrl) {
+    errors.push({ inputId: 'apiUrl', message: missingText($('i18n_labelUrl').textContent) });
+  } else if (!isValidProviderEndpoint(panelType, cleanedUrl)) {
+    errors.push({
+      inputId: 'apiUrl',
+      message: providerUsesAwsRegion(panelType) ? t('msgInvalidRegion') : t('msgInvalidUrl')
+    });
+  }
+
+  if (!apiKey) {
+    errors.push({ inputId: 'apiKey', message: missingText($('i18n_labelKey').textContent) });
+  }
+
+  if (needsHash && !apiHash) {
+    errors.push({ inputId: 'apiHash', message: missingText($('i18n_labelHash').textContent) });
+  }
+
+  if (errors.length > 0) {
+    errors.forEach(error => setFieldError(error.inputId, error.message));
+    const first = $(errors[0].inputId);
+    if (first && options.focus !== false) first.focus();
+    showMsg(t('msgRequired'), false);
+    return null;
+  }
+
+  const name = $('serverName').value.trim() || buildAutoServerName(panelType, cleanedUrl);
+  if (options.updateInputs) {
+    $('serverName').value = name;
+    $('apiUrl').value = cleanedUrl;
+    if (!needsHash) $('apiHash').value = '';
+  }
+
+  return {
+    name,
+    apiUrl: cleanedUrl,
+    apiKey,
+    apiHash,
+    panelType
+  };
+}
+
 // Apply internationalization translations
 function applyTranslations() {
   $('i18n_title').innerHTML = lucideIcon('settings', 20) + '<span>VPS Dashboard · ' + t('subtitle') + '</span>';
@@ -89,6 +277,7 @@ function applyTranslations() {
   $('i18n_hintName').textContent = t('hintName');
   $('i18n_labelPanelType').textContent = t('labelPanelType');
   $('i18n_hintPanelType').textContent = t('hintPanelType');
+  $('i18n_advancedTitle').textContent = t('advancedTitle');
   $('i18n_labelUrl').textContent = t('labelUrl');
   $('i18n_hintUrl').textContent = t('hintUrl');
   $('i18n_labelKey').textContent = t('labelKey');
@@ -137,6 +326,7 @@ function applyTranslations() {
   }
   
   renderServerList();
+  renderProviderCards();
   updatePanelHelp();
 }
 
@@ -173,6 +363,25 @@ function updatePanelHelp() {
     guideWrap.style.display = 'none';
   }
 
+  maybePrefillProviderEndpoint(panelType);
+  updateProviderCards();
+
+  const hashRequired = providerNeedsApiHash(panelType);
+  const hashGroup = $('apiHashGroup');
+  const hashInput = $('apiHash');
+  const endpointInput = $('apiUrl');
+  if (endpointInput) {
+    endpointInput.type = providerUsesAwsRegion(panelType) ? 'text' : 'url';
+  }
+  if (hashGroup) hashGroup.style.display = hashRequired ? '' : 'none';
+  if (hashInput) {
+    hashInput.disabled = !hashRequired;
+    if (!hashRequired) {
+      clearFieldInvalidState('apiHash');
+      hashInput.type = 'password';
+    }
+  }
+
   if (panelType === 'lightsail' || panelType === 'ec2') {
     $('i18n_labelUrl').textContent = t('labelUrlLightsail');
     $('i18n_hintUrl').textContent = t('hintUrlLightsail');
@@ -204,6 +413,9 @@ function updatePanelHelp() {
     $('apiKey').placeholder = t('placeholderKey');
     $('apiHash').placeholder = t('placeholderHash');
   }
+
+  clearFieldInvalidState('apiUrl');
+  clearFieldInvalidState('apiKey');
 }
 
 // Render server list
@@ -288,6 +500,7 @@ function selectServer(id) {
   editingServerId = id;
   const s = servers.find(item => item.id === id);
   if (s) {
+    clearFieldErrors();
     $('formTitle').textContent = t('formTitleEdit', { name: s.name });
     $('serverName').value = s.name;
     $('apiUrl').value = s.apiUrl;
@@ -305,6 +518,7 @@ function selectServer(id) {
     $('expiryDisabled').checked = !!s.expiryDisabled;
     const apiNote = $('expiryApiNote');
     if (apiNote) apiNote.style.display = (s.expirySource === 'api') ? 'flex' : 'none';
+    syncAdvancedPanel(s);
     
     document.querySelectorAll('.server-item').forEach(el => {
       el.classList.toggle('active', el.dataset.id === id);
@@ -316,6 +530,7 @@ function selectServer(id) {
 // Switch to add-new form
 function showNewForm() {
   editingServerId = null;
+  clearFieldErrors();
   $('formTitle').textContent = t('formTitleAdd');
   $('serverName').value = '';
   $('apiUrl').value = '';
@@ -331,6 +546,7 @@ function showNewForm() {
   $('expiryDisabled').checked = false;
   const apiNote = $('expiryApiNote');
   if (apiNote) apiNote.style.display = 'none';
+  syncAdvancedPanel(null);
   
   document.querySelectorAll('.server-item').forEach(el => {
     el.classList.remove('active');
@@ -428,6 +644,10 @@ function loadConfig() {
         showNewForm();
         $('panelType').value = pendingPanel;
         updatePanelHelp();
+        // Entered the configuration state for the provider the user picked
+        // from the popup onboarding screen. Kept separate from
+        // onboarding_provider_picked so "picked but never configured" is measurable.
+        if (typeof Analytics !== 'undefined') Analytics.configurationStarted(pendingPanel).catch(() => {});
         return;
       }
 
@@ -450,18 +670,8 @@ function loadConfig() {
 
 // Save configuration
 function saveServer() {
-  const name = $('serverName').value.trim();
-  const apiUrl = $('apiUrl').value.trim();
-  const apiKey = $('apiKey').value.trim();
-  const apiHash = $('apiHash').value.trim();
-  const panelType = $('panelType').value;
-  
-  if (!name || !apiUrl || !apiKey || (panelType !== 'solusvm2' && panelType !== 'virtfusion' && panelType !== 'proxmox' && panelType !== 'hetzner' && panelType !== 'digitalocean' && !apiHash)) {
-    showMsg(t('msgRequired'), false);
-    return;
-  }
-  
-  let cleanedUrl = apiUrl.replace(/\/$/, '');
+  const form = collectServerForm({ updateInputs: true });
+  if (!form) return;
   
   const rawExpiry = $('expiryDate').value.trim();
   // Decide expiry provenance: a manual edit always wins; an untouched API
@@ -477,11 +687,11 @@ function saveServer() {
   }
 
   const config = {
-    name,
-    apiUrl: cleanedUrl,
-    apiKey,
-    apiHash,
-    panel_type: panelType,
+    name: form.name,
+    apiUrl: form.apiUrl,
+    apiKey: form.apiKey,
+    apiHash: form.apiHash,
+    panel_type: form.panelType,
     tags: normalizeTagList($('serverTags').value),
     expiryDate: rawExpiry,
     expirySource,
@@ -513,12 +723,19 @@ function saveServer() {
     persistServers(servers, currentId, () => {
       renderServerList();
       selectServer(editingServerId);
-      if (typeof Analytics !== 'undefined') Analytics.saveServer(panelType).catch(() => {});
+      if (typeof Analytics !== 'undefined') {
+        const _isNew = !isEditing;
+        Analytics.serverSaved(form.panelType, _isNew).catch(() => {});
+        // configuration_completed: only when a brand-new server is persisted,
+        // so later edits aren't double-counted as "finished configuring".
+        if (_isNew) Analytics.configurationCompleted(form.panelType).catch(() => {});
+      }
       showMsg(t(isEditing ? 'msgSaved' : 'msgAdded'), true);
     });
     });
   } catch (e) {
     console.error('saveServer error:', e);
+    if (typeof Analytics !== 'undefined') Analytics.serverSaveFailed(form.panelType, e).catch(() => {});
     showMsg(t('saveError', { error: e.message }), false);
   }
 }
@@ -594,23 +811,21 @@ function copyServer(id) {
 
 // Test API connection
 function testConnection() {
-  const apiUrl = $('apiUrl').value.trim();
-  const apiKey = $('apiKey').value.trim();
-  const apiHash = $('apiHash').value.trim();
-  const panelType = $('panelType').value;
-  
-  if (!apiUrl || !apiKey || (panelType !== 'solusvm2' && panelType !== 'virtfusion' && panelType !== 'proxmox' && panelType !== 'hetzner' && panelType !== 'digitalocean' && !apiHash)) {
-    showMsg(t('msgRequired'), false);
-    return;
-  }
+  const form = collectServerForm({ updateInputs: true });
+  if (!form) return;
   
   showMsg(t('msgTesting'), true);
   
-  const tempConfig = { apiUrl, apiKey, apiHash, panel_type: panelType };
+  const tempConfig = {
+    apiUrl: form.apiUrl,
+    apiKey: form.apiKey,
+    apiHash: form.apiHash,
+    panel_type: form.panelType
+  };
 
-  // Anonymous usage analytics: count test-connection clicks per provider type.
+  // Anonymous usage analytics: count test-connection attempts per provider type.
   // Only provider type is sent; never credentials, URL, or server identity.
-  if (typeof Analytics !== 'undefined') Analytics.testConnection(panelType);
+  if (typeof Analytics !== 'undefined') Analytics.connectionTestStarted(form.panelType).catch(() => {});
 
   try {
     chrome.runtime.sendMessage({ action: 'testConnection', config: tempConfig }, resp => {
@@ -625,9 +840,11 @@ function testConnection() {
         return;
       }
       if (resp && resp.success) {
+        if (typeof Analytics !== 'undefined') Analytics.connectionTestSucceeded(form.panelType).catch(() => {});
         showMsg(t('msgTestOk'), true);
       } else {
         const errMsg = resp ? resp.error : t('apiTimeout');
+        if (typeof Analytics !== 'undefined') Analytics.connectionTestFailed(form.panelType, errMsg).catch(() => {});
         showMsg(t('msgTestFail', { error: errMsg }), false);
       }
     });
@@ -775,6 +992,10 @@ function removeCacheKeys(callback) {
 function importConfigFile(file) {
   if (!file) return;
 
+  // Anonymous usage analytics: a config import was initiated.
+  // Only a count is sent; never the file contents or any credentials.
+  if (typeof Analytics !== 'undefined') Analytics.configImportStarted().catch(() => {});
+
   const reader = new FileReader();
   reader.onload = () => {
     try {
@@ -794,7 +1015,7 @@ function importConfigFile(file) {
           defaultServerId = nextConfig.defaultServerId;
           editingServerId = nextConfig.currentServerId;
           allTags = nextConfig.tags;
-          if (typeof Analytics !== 'undefined') Analytics.importConfig().catch(() => {});
+          if (typeof Analytics !== 'undefined') Analytics.configImportSucceeded(nextConfig.servers.length).catch(() => {});
           // Refresh threshold checkboxes from storage (global prefs are not part of config export)
           chrome.storage.local.get(['expiryThresholds'], stored => {
             const thresholds = (Array.isArray(stored.expiryThresholds) && stored.expiryThresholds.length)
@@ -810,6 +1031,7 @@ function importConfigFile(file) {
         });
       });
     } catch (e) {
+      if (typeof Analytics !== 'undefined') Analytics.configImportFailed(e).catch(() => {});
       showMsg(t('msgImportFail', { error: e.message }), false);
     } finally {
       $('importConfigFile').value = '';
@@ -823,10 +1045,32 @@ function importConfigFile(file) {
 }
 
 // Bind DOM events
-$('addBtn').addEventListener('click', showNewForm);
+$('addBtn').addEventListener('click', () => {
+  showNewForm();
+  // User explicitly started configuring a new server (defaults to SolusVM v1).
+  if (typeof Analytics !== 'undefined') Analytics.configurationStarted('solusvm').catch(() => {});
+});
 $('saveBtn').addEventListener('click', saveServer);
 $('testBtn').addEventListener('click', testConnection);
-$('panelType').addEventListener('change', updatePanelHelp);
+$('panelType').addEventListener('change', () => {
+  updatePanelHelp();
+  hideMsg();
+});
+$('providerCards').addEventListener('click', e => {
+  const card = e.target.closest('.provider-card');
+  if (!card) return;
+  $('panelType').value = card.dataset.panelType;
+  updatePanelHelp();
+  hideMsg();
+});
+$('apiUrl').addEventListener('blur', () => {
+  const panelType = $('panelType').value;
+  const cleanedUrl = normalizeProviderEndpoint(panelType, $('apiUrl').value);
+  if (cleanedUrl) $('apiUrl').value = cleanedUrl;
+});
+['apiUrl', 'apiKey', 'apiHash', 'serverName'].forEach(inputId => {
+  $(inputId).addEventListener('input', () => clearFieldInvalidState(inputId));
+});
 $('themeToggle').addEventListener('click', () => setDarkMode(!darkModeEnabled, true));
 $('exportConfigBtn').addEventListener('click', exportConfig);
 $('importConfigBtn').addEventListener('click', () => $('importConfigFile').click());

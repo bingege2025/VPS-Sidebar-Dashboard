@@ -337,6 +337,7 @@ const feedbackProviderBtn = $('feedbackProviderBtn');
 if (feedbackProviderBtn) {
   feedbackProviderBtn.addEventListener('click', e => {
     e.preventDefault();
+    if (typeof Analytics !== 'undefined') Analytics.requestProvider().catch(() => {});
     openQuickFeedback('provider');
   });
 }
@@ -345,6 +346,7 @@ const feedbackBugBtn = $('feedbackBugBtn');
 if (feedbackBugBtn) {
   feedbackBugBtn.addEventListener('click', e => {
     e.preventDefault();
+    if (typeof Analytics !== 'undefined') Analytics.reportBug().catch(() => {});
     openQuickFeedback('bug');
   });
 }
@@ -494,6 +496,22 @@ function exportCurrentServerICS(t) {
 
     data.servers = normalizedServers;
 
+    // First real usage: fire ONCE when the popup opens with at least one
+    // configured server. Gated by a storage flag so it never double-counts.
+    // Only the provider kind is reported — never a server name, IP, or id.
+    if (normalizedServers.length > 0) {
+      chrome.storage.local.get(['analytics_first_server_viewed'], function (flag) {
+        if (!flag || !flag.analytics_first_server_viewed) {
+          var _first = (data.currentServerId
+            && normalizedServers.find(function (x) { return x.id === data.currentServerId; }))
+            ? normalizedServers.find(function (x) { return x.id === data.currentServerId; }).panel_type
+            : normalizedServers[0].panel_type;
+          if (typeof Analytics !== 'undefined') Analytics.firstServerViewed(_first).catch(() => {});
+          chrome.storage.local.set({ analytics_first_server_viewed: true });
+        }
+      });
+    }
+
     function showNoConfigView() {
       main.innerHTML = `
         <div class="no-config">
@@ -536,7 +554,7 @@ function exportCurrentServerICS(t) {
       main.querySelectorAll('.provider-card').forEach(card => {
         card.addEventListener('click', () => {
           const pt = card.getAttribute('data-panel');
-          if (typeof Analytics !== 'undefined') Analytics.onboardingProviderPicked(pt).catch(() => {});
+          try { chrome.runtime.sendMessage({ action: 'analytics_onboarding_pick', panelType: pt }); } catch (e) {}
           chrome.storage.local.set({ pendingPanelType: pt }, () => chrome.runtime.openOptionsPage());
         });
       });
@@ -547,7 +565,7 @@ function exportCurrentServerICS(t) {
       const skip = $('onboardingSkip');
       if (skip) skip.addEventListener('click', e => {
         e.preventDefault();
-        if (typeof Analytics !== 'undefined') Analytics.onboardingSkip().catch(() => {});
+        try { chrome.runtime.sendMessage({ action: 'analytics_onboarding_skip' }); } catch (e) {}
         chrome.storage.local.set({ onboardingSkipped: true }, () => showNoConfigView());
       });
       if (statusBar) statusBar.style.display = 'none';

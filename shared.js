@@ -147,9 +147,117 @@ const PROVIDER_META = {
   digitalocean: { name: 'DigitalOcean',  logo: 'logos/digitalocean.svg' }
 };
 const PROVIDER_META_DEFAULT = { name: 'VPS', logo: 'logos/default.svg' };
+const PROVIDER_ORDER = [
+  'solusvm',
+  'solusvm2',
+  'virtfusion',
+  'virtualizor',
+  'proxmox',
+  'hetzner',
+  'digitalocean',
+  'lightsail',
+  'ec2'
+];
+const PROVIDER_HASH_OPTIONAL = ['solusvm2', 'virtfusion', 'proxmox', 'hetzner', 'digitalocean'];
+const PROVIDER_AWS_REGIONS = ['lightsail', 'ec2'];
+const PROVIDER_DEFAULT_API_URLS = {
+  hetzner: 'https://api.hetzner.cloud/v1',
+  digitalocean: 'https://api.digitalocean.com/v2'
+};
 
 function getProviderMeta(panelType) {
   return PROVIDER_META[panelType] || PROVIDER_META_DEFAULT;
+}
+
+function providerNeedsApiHash(panelType) {
+  return PROVIDER_HASH_OPTIONAL.indexOf(panelType) === -1;
+}
+
+function providerUsesAwsRegion(panelType) {
+  return PROVIDER_AWS_REGIONS.indexOf(panelType) !== -1;
+}
+
+function getProviderDefaultApiUrl(panelType) {
+  return PROVIDER_DEFAULT_API_URLS[panelType] || '';
+}
+
+function normalizeAwsRegionSetting(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const cleaned = raw.replace(/^https?:\/\//i, '');
+  const regionMatch = cleaned.match(/([a-z]{2}-[a-z]+-\d+)/i);
+  const instanceMatch = cleaned.match(/(i-[0-9a-fA-F]+)/);
+  const region = (regionMatch ? regionMatch[1] : cleaned.split('/')[0].split('?')[0]).toLowerCase();
+  return instanceMatch ? `${region}/${instanceMatch[1]}` : region;
+}
+
+function normalizeProviderEndpoint(panelType, rawValue) {
+  let value = String(rawValue || '').trim();
+  const defaultUrl = getProviderDefaultApiUrl(panelType);
+  if (!value && defaultUrl) return defaultUrl;
+
+  if (panelType === 'hetzner' && /^\d+$/.test(value)) {
+    return `${PROVIDER_DEFAULT_API_URLS.hetzner}/servers/${value}`;
+  }
+  if (panelType === 'digitalocean' && /^\d+$/.test(value)) {
+    return `${PROVIDER_DEFAULT_API_URLS.digitalocean}/droplets/${value}`;
+  }
+  if (providerUsesAwsRegion(panelType)) {
+    return normalizeAwsRegionSetting(value);
+  }
+  if (!value) return '';
+  if (!/^https?:\/\//i.test(value)) value = `https://${value}`;
+  value = value.replace(/\/$/, '');
+
+  if (panelType === 'solusvm') {
+    value = value.replace(/\/api$/i, '');
+    if (!/\/api\/client\/command\.php$/i.test(value)) {
+      value = `${value}/api/client/command.php`;
+    }
+  } else if (panelType === 'solusvm2' || panelType === 'virtfusion') {
+    if (!/\/api\/v\d+(\/|$)/i.test(value)) {
+      value = /\/servers(\/|$)/i.test(value)
+        ? value.replace(/\/servers/i, '/api/v1/servers')
+        : `${value}/api/v1`;
+    }
+  } else if (panelType === 'virtualizor') {
+    if (!/\/index\.php$/i.test(value)) {
+      value = `${value}/index.php`;
+    }
+  } else if (panelType === 'proxmox') {
+    if (!/\/api2\/json(\/|$)/i.test(value)) {
+      value = /\/nodes(\/|$)/i.test(value)
+        ? value.replace(/\/nodes/i, '/api2/json/nodes')
+        : `${value}/api2/json`;
+    }
+  } else if (panelType === 'hetzner') {
+    if (!/\/v1(\/|$)/i.test(value)) {
+      value = /\/servers(\/|$)/i.test(value)
+        ? value.replace(/\/servers/i, '/v1/servers')
+        : `${value}/v1`;
+    }
+  } else if (panelType === 'digitalocean') {
+    if (!/\/v2(\/|$)/i.test(value)) {
+      value = /\/droplets(\/|$)/i.test(value)
+        ? value.replace(/\/droplets/i, '/v2/droplets')
+        : `${value}/v2`;
+    }
+  }
+
+  return value;
+}
+
+function isValidProviderEndpoint(panelType, value) {
+  if (!value) return false;
+  if (providerUsesAwsRegion(panelType)) {
+    return /^[a-z]{2}-[a-z]+-\d(\/i-[0-9a-f]+)?$/i.test(value);
+  }
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch (e) {
+    return false;
+  }
 }
 
 // Lucide icons (lucide.dev) — unified: 24x24 viewBox, stroke 2, round caps, currentColor

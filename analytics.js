@@ -24,8 +24,8 @@
   //   1. Use a dedicated GA4 property that only collects these events.
   //   2. A leaked MP secret can ONLY send events to your property, never read data.
   //   3. Inject via build step (replace the tokens below) so values live in one place.
-  var MEASUREMENT_ID = '__GA_MEASUREMENT_ID__'; // e.g. "G-ABCDE12345"
-  var API_SECRET = '__GA_API_SECRET__';        // e.g. "AbC_1a2b3c4d5e6f7"
+  var MEASUREMENT_ID = 'G-8JXMG1LZ7B'; // e.g. "G-ABCDE12345"
+  var API_SECRET = 'TsnKm2coR4ydKFwAecEbXw';        // e.g. "AbC_1a2b3c4d5e6f7"
 
   var GA_ENDPOINT = 'https://www.google-analytics.com/mp/collect';
   // Debug endpoint returns a JSON validation report and does NOT write to the
@@ -159,57 +159,132 @@
     return PROVIDER_EVENT_VALUE[panelType] || 'unknown';
   }
 
-  // Action → specific Chinese event name per button
+  // Action → dedicated ASCII snake_case GA4 event name.
+  // One event name per action; the action is NOT duplicated as a param.
   var ACTION_EVENT_NAME = {
-    refresh: '刷新',
-    reboot: '重启',
-    boot: '开机',
-    shutdown: '关机',
-    batchRefresh: '批量刷新',
-    batchReboot: '批量重启',
-    batchShutdown: '批量关机'
+    refresh: 'refresh',
+    reboot: 'reboot',
+    boot: 'boot',
+    shutdown: 'shutdown',
+    batchRefresh: 'batch_refresh',
+    batchReboot: 'batch_reboot',
+    batchShutdown: 'batch_shutdown'
   };
 
+  // Coarse, privacy-safe error classification.
+  // Raw provider error text is NEVER sent to GA4: it can embed request URLs,
+  // tokens, account ids or response bodies. Only a fixed category label is sent.
+  function classifyError(msg) {
+    var s = String(msg == null ? '' : msg).toLowerCase();
+    if (!s) return 'unknown';
+    if (/401|403|unauthor|forbidden|authentication|auth[_ ]?fail|invalid (api )?(key|token|hash|secret|credential)|bad credential|invalid signature/.test(s)) return 'authentication';
+    if (/timeout|timed out|etimedout|aborted/.test(s)) return 'timeout';
+    if (/invalid url|invalidurl|malformed url|not a valid url/.test(s)) return 'invalid_url';
+    if (/failed to fetch|network|enotfound|econnrefused|econnreset|getaddrinfo|dns|offline|ssl|certificate/.test(s)) return 'network';
+    if (/status [45]\d\d|\b[45]\d\d\b|api[_ ]?error|http[_ ]?error/.test(s)) return 'api_error';
+    return 'unknown';
+  }
+
+  // ── GA4 event catalogue (ASCII snake_case) ──────────────────────
+  // Exactly one event per real user behaviour — never two events for one action.
+  // Params are restricted to non-sensitive, fixed-vocabulary values:
+  //   provider   → PROVIDER_EVENT_VALUE (never an account, host or instance id)
+  //   error_type → classifyError() category (never raw error text)
   var Analytics = {
-    extensionOpened: function () { return track('打开插件'); },
-    providerConnected: function (panelType) {
-      return track('连接服务商', { provider: providerEventValue(panelType) });
+    // 1. Reach
+    extensionOpened: function () {
+      return track('extension_opened');
     },
-    expiryReminderEnabled: function () { return track('到期提醒已开启'); },
-    expiryReminderFired: function () { return track('到期提醒已触发'); },
-    testConnection: function (panelType) {
-      return track('测试连接', { provider: providerEventValue(panelType) });
+
+    // 2. Onboarding
+    onboardingShown: function (providerCount) {
+      return track('onboarding_shown', { provider_count: Number(providerCount) || 0 });
     },
-    serverAction: function (panelType, action) {
-      var eventName = ACTION_EVENT_NAME[action] || '服务器操作';
-      return track(eventName, { provider: providerEventValue(panelType), action: action });
+    onboardingProviderPicked: function (panelType) {
+      return track('onboarding_provider_picked', { provider: providerEventValue(panelType) });
     },
-    batchAction: function (panelType, action) {
-      var eventName = ACTION_EVENT_NAME[action] || '批量操作';
-      return track(eventName, { provider: providerEventValue(panelType), action: action });
+    onboardingSkip: function () {
+      return track('onboarding_skip');
     },
-    exportIcs: function (panelType) {
-      return track('导出日历', { provider: panelType ? providerEventValue(panelType) : 'all' });
-    },
-    exportConfig: function () { return track('导出配置'); },
-    importConfig: function () { return track('导入配置'); },
-    requestProvider: function () { return track('请求服务商'); },
-    reportBug: function () { return track('报告问题'); },
-    contactDev: function () { return track('联系开发者'); },
-    saveServer: function (panelType) {
-      return track('保存服务器', { provider: providerEventValue(panelType) });
+    onboardingGuideOpened: function (panelType) {
+      return track('onboarding_guide_opened', { provider: panelType ? providerEventValue(panelType) : 'all' });
     },
     viewGuide: function (panelType) {
-      return track('查看教程', { provider: providerEventValue(panelType) });
+      return track('view_guide', { provider: providerEventValue(panelType) });
     },
-    // ── 首次引导漏斗 ──
-    onboardingShown: function () { return track('引导页展示'); },
-    onboardingProviderPicked: function (panelType) {
-      return track('引导页选择服务商', { provider: providerEventValue(panelType) });
+
+    // 3. Configuration
+    //    configuration_started is deliberately separate from
+    //    onboarding_provider_picked so "picked but never configured" is measurable.
+    configurationStarted: function (panelType) {
+      return track('configuration_started', { provider: providerEventValue(panelType) });
     },
-    onboardingSkip: function () { return track('引导页跳过'); },
-    onboardingGuideOpened: function (panelType) {
-      return track('引导页打开教程', { provider: panelType ? providerEventValue(panelType) : 'all' });
+    connectionTestStarted: function (panelType) {
+      return track('connection_test_started', { provider: providerEventValue(panelType) });
+    },
+    connectionTestSucceeded: function (panelType) {
+      return track('connection_test_succeeded', { provider: providerEventValue(panelType) });
+    },
+    connectionTestFailed: function (panelType, error) {
+      return track('connection_test_failed', { provider: providerEventValue(panelType), error_type: classifyError(error) });
+    },
+    serverSaved: function (panelType, isNew) {
+      return track('server_saved', { provider: providerEventValue(panelType), is_new: !!isNew });
+    },
+    serverSaveFailed: function (panelType, error) {
+      return track('server_save_failed', { provider: providerEventValue(panelType), error_type: classifyError(error) });
+    },
+    // Fires only when a NEW server is persisted (a plain edit is just
+    // server_saved), so "finished configuring" isn't conflated with later edits.
+    configurationCompleted: function (panelType) {
+      return track('configuration_completed', { provider: providerEventValue(panelType) });
+    },
+
+    // 4. First real usage
+    firstServerViewed: function (panelType) {
+      return track('first_server_viewed', { provider: providerEventValue(panelType) });
+    },
+    serverAction: function (panelType, action) {
+      return track(ACTION_EVENT_NAME[action] || 'server_action', { provider: providerEventValue(panelType) });
+    },
+    batchAction: function (panelType, action) {
+      return track(ACTION_EVENT_NAME[action] || 'batch_action', { provider: providerEventValue(panelType) });
+    },
+
+    // 5. Import / export
+    configImportStarted: function () {
+      return track('config_import_started');
+    },
+    configImportSucceeded: function (serverCount) {
+      return track('config_import_succeeded', { server_count: Number(serverCount) || 0 });
+    },
+    configImportFailed: function (error) {
+      return track('config_import_failed', { error_type: classifyError(error) });
+    },
+    exportConfig: function () {
+      return track('export_config');
+    },
+    exportIcs: function (panelType) {
+      return track('export_ics', { provider: panelType ? providerEventValue(panelType) : 'all' });
+    },
+
+    // 6. Feedback
+    requestProvider: function () {
+      return track('request_provider');
+    },
+    reportBug: function () {
+      return track('report_bug');
+    },
+    contactDev: function () {
+      return track('contact_dev');
+    },
+
+    // 7. Expiry reminders
+    expiryReminderEnabled: function () {
+      return track('expiry_reminder_enabled');
+    },
+    expiryReminderFired: function () {
+      return track('expiry_reminder_fired');
     },
     // exposed for the uninstall-URL use case (no fetch available there)
     getClientId: getClientId,
