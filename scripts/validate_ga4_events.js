@@ -51,7 +51,7 @@ const required = [
   'server_action', 'batch_action', 'export_ics', 'export_config',
   'config_import_started', 'config_import_succeeded', 'config_import_failed',
   'view_guide', 'expiry_reminder_enabled', 'expiry_reminder_fired',
-  'request_provider', 'report_bug', 'contact_dev'
+  'request_provider', 'report_bug', 'contact_dev', 'setup_blocker'
 ];
 const missing = required.filter(r => !names.has(r));
 if (missing.length) {

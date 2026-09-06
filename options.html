@@ -356,6 +356,162 @@
     }
     button.btn-secondary:hover { background: #4b5563; transform: translateY(-1px); }
 
+    .setup-help {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      color: #6b7280;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .setup-help[hidden] { display: none; }
+    .setup-help-link {
+      border: none;
+      background: transparent;
+      color: #2563eb;
+      padding: 0;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .setup-help-link:hover {
+      color: #1d4ed8;
+      text-decoration: underline;
+    }
+    .setup-help-error {
+      margin-top: 10px;
+    }
+
+    .setup-blocker-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(15, 23, 42, 0.32);
+    }
+    .setup-blocker-overlay[hidden] { display: none; }
+    .setup-blocker-dialog {
+      width: min(430px, 100%);
+      position: relative;
+      padding: 20px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: white;
+      box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+    }
+    .setup-blocker-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 30px;
+      height: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 8px;
+      color: #9ca3af;
+      background: transparent;
+      cursor: pointer;
+    }
+    .setup-blocker-close:hover {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    .setup-blocker-title {
+      padding-right: 34px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #111827;
+    }
+    .setup-blocker-choices {
+      display: grid;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .setup-blocker-choices[hidden] { display: none; }
+    .setup-blocker-choice {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      min-height: 42px;
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #f9fafb;
+      color: #374151;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.35;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+    }
+    .setup-blocker-choice:hover {
+      border-color: #93c5fd;
+      background: #f0f7ff;
+      color: #1d4ed8;
+    }
+    .setup-blocker-choice:disabled {
+      cursor: default;
+      opacity: 0.65;
+    }
+    .setup-blocker-other {
+      margin-top: 16px;
+    }
+    .setup-blocker-other[hidden] { display: none; }
+    .setup-blocker-other textarea {
+      width: 100%;
+      min-height: 78px;
+      padding: 10px 12px;
+      resize: vertical;
+      border: 1.5px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 13px;
+      color: #1f2937;
+      background: white;
+    }
+    .setup-blocker-other-actions {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .setup-blocker-send {
+      padding: 9px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .setup-blocker-more {
+      color: #2563eb;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .setup-blocker-more:hover {
+      color: #1d4ed8;
+      text-decoration: underline;
+    }
+    .setup-blocker-thanks {
+      margin-top: 16px;
+      padding: 10px 12px;
+      border: 1px solid #a7f3d0;
+      border-radius: 8px;
+      background: #ecfdf5;
+      color: #047857;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .setup-blocker-thanks[hidden] { display: none; }
+
     .msg {
       margin-top: 16px; padding: 12px 16px; border-radius: 10px;
       font-size: 13px; display: none; line-height: 1.5;
@@ -410,6 +566,20 @@
     body.dark .advanced-panel summary { color: #d4d9e0; }
     body.dark .advanced-chevron { color: #7d8694; }
     body.dark .field-error { color: #fca5a5; }
+    body.dark .setup-help { color: #94a3b8; }
+    body.dark .setup-help-link { color: #8ab4ff; }
+    body.dark .setup-help-link:hover { color: #bfdbfe; }
+    body.dark .setup-blocker-overlay { background: rgba(0, 0, 0, 0.48); }
+    body.dark .setup-blocker-dialog { background: #22262e; border-color: #2e333d; box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35); }
+    body.dark .setup-blocker-title { color: #e6e9ef; }
+    body.dark .setup-blocker-close { color: #7d8694; }
+    body.dark .setup-blocker-close:hover { background: #2a2f39; color: #d4d9e0; }
+    body.dark .setup-blocker-choice { background: #1a1d23; border-color: #3a404c; color: #d4d9e0; }
+    body.dark .setup-blocker-choice:hover { background: #172033; border-color: #60a5fa; color: #bfdbfe; }
+    body.dark .setup-blocker-other textarea { background: #1a1d23; border-color: #3a404c; color: #e6e9ef; }
+    body.dark .setup-blocker-more { color: #8ab4ff; }
+    body.dark .setup-blocker-more:hover { color: #bfdbfe; }
+    body.dark .setup-blocker-thanks { background: #0d2818; color: #7ee2b0; border-color: #1c5c38; }
     body.dark .config-tools { border-top-color: #2e333d; }
     body.dark .config-tools-title { color: #d4d9e0; }
     body.dark .btn-add { background: #1d2f49; border-color: #3b82f6; color: #8ab4ff; }
@@ -459,6 +629,9 @@
       }
       .form-actions button {
         width: 100%;
+      }
+      .setup-blocker-dialog {
+        padding: 18px;
       }
     }
   </style>
@@ -663,8 +836,37 @@
         <button id="saveBtn" class="btn-primary">Save Settings</button>
         <button id="testBtn" class="btn-secondary">Test Connection</button>
       </div>
+      <div id="setupHelp" class="setup-help">
+        <span id="i18n_setupHelpPrompt"></span>
+        <button id="setupHelpBtn" class="setup-help-link" type="button"></button>
+      </div>
       <div id="msg" class="msg"></div>
+      <div id="setupStillStuck" class="setup-help setup-help-error" hidden>
+        <span id="i18n_setupStillStuck"></span>
+        <button id="setupStillStuckBtn" class="setup-help-link" type="button"></button>
+      </div>
 
+    </div>
+  </div>
+
+  <div id="setupBlockerOverlay" class="setup-blocker-overlay" hidden>
+    <div class="setup-blocker-dialog" role="dialog" aria-modal="true" aria-labelledby="setupBlockerTitle">
+      <button id="setupBlockerClose" class="setup-blocker-close" type="button" aria-label="">
+        <svg class="lucide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+        </svg>
+      </button>
+      <div id="setupBlockerTitle" class="setup-blocker-title"></div>
+      <div id="setupBlockerChoices" class="setup-blocker-choices"></div>
+      <div id="setupBlockerOtherBox" class="setup-blocker-other" hidden>
+        <label id="i18n_setupBlockerOtherPrompt" for="setupBlockerOtherText"></label>
+        <textarea id="setupBlockerOtherText"></textarea>
+        <div class="setup-blocker-other-actions">
+          <button id="setupBlockerOtherSend" class="btn-secondary setup-blocker-send" type="button"></button>
+          <a id="setupBlockerTellMore" class="setup-blocker-more" href="#" target="_blank" rel="noopener"></a>
+        </div>
+      </div>
+      <div id="setupBlockerThanks" class="setup-blocker-thanks" hidden></div>
     </div>
   </div>
 

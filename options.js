@@ -11,6 +11,7 @@ const CONFIG_EXPORT_VERSION = 1;
 
 const t = window.t;
 const LANDING_BASE_URL = 'https://a.meng.mom';
+const GITHUB_NEW_ISSUE_URL = 'https://github.com/bingege2025/VPS-Sidebar-Dashboard/issues/new';
 const PROVIDER_GUIDE_PATHS = {
   solusvm: '/guides/solusvm-v1.html',
   ec2: '/guides/aws-ec2.html',
@@ -22,6 +23,18 @@ const PROVIDER_GUIDE_PATHS = {
   digitalocean: '/guides/digitalocean.html',
   lightsail: '/guides/lightsail.html'
 };
+const SETUP_BLOCKER_REASONS = [
+  { reason: 'credentials_not_found', labelKey: 'setupBlockerCredentials' },
+  { reason: 'fields_unclear', labelKey: 'setupBlockerFields' },
+  { reason: 'credential_privacy_concern', labelKey: 'setupBlockerPrivacy' },
+  { reason: 'provider_mismatch', labelKey: 'setupBlockerProviderMismatch' },
+  { reason: 'setup_too_complicated', labelKey: 'setupBlockerTooComplicated' },
+  { reason: 'just_exploring', labelKey: 'setupBlockerExploring' },
+  { reason: 'other', labelKey: 'setupBlockerOther' }
+];
+let setupBlockerSubmitted = false;
+let setupBlockerCloseTimer = null;
+let setupBlockerLastFocus = null;
 
 // HTML escape to prevent XSS
 function escapeHtml(str) {
@@ -47,6 +60,7 @@ function hideMsg() {
   if (el) {
     el.style.display = 'none';
   }
+  setSetupStillStuckVisible(false);
 }
 
 function updateThemeToggle() {
@@ -269,6 +283,142 @@ function collectServerForm(options = {}) {
   };
 }
 
+function getSelectedPanelType() {
+  return $('panelType') ? $('panelType').value : 'solusvm';
+}
+
+function setSetupStillStuckVisible(visible) {
+  const el = $('setupStillStuck');
+  if (el) el.hidden = !visible;
+}
+
+function renderSetupBlockerChoices() {
+  const wrap = $('setupBlockerChoices');
+  if (!wrap) return;
+  wrap.hidden = false;
+  wrap.innerHTML = SETUP_BLOCKER_REASONS.map(item => `
+    <button type="button" class="setup-blocker-choice" data-reason="${item.reason}">
+      <span>${escapeHtml(t(item.labelKey))}</span>
+      <span aria-hidden="true">→</span>
+    </button>
+  `).join('');
+}
+
+function updateSetupBlockerTexts() {
+  const helpPrompt = $('i18n_setupHelpPrompt');
+  const helpBtn = $('setupHelpBtn');
+  const stuckPrompt = $('i18n_setupStillStuck');
+  const stuckBtn = $('setupStillStuckBtn');
+  const title = $('setupBlockerTitle');
+  const close = $('setupBlockerClose');
+  const otherPrompt = $('i18n_setupBlockerOtherPrompt');
+  const otherText = $('setupBlockerOtherText');
+  const otherSend = $('setupBlockerOtherSend');
+  const thanks = $('setupBlockerThanks');
+  const tellMore = $('setupBlockerTellMore');
+
+  if (helpPrompt) helpPrompt.textContent = t('setupHelpPrompt');
+  if (helpBtn) helpBtn.textContent = t('setupHelpAction');
+  if (stuckPrompt) stuckPrompt.textContent = t('setupStillStuck');
+  if (stuckBtn) stuckBtn.textContent = t('setupStillStuckAction');
+  if (title) title.textContent = t('setupBlockerTitle');
+  if (close) {
+    close.title = t('setupBlockerClose');
+    close.setAttribute('aria-label', t('setupBlockerClose'));
+  }
+  if (otherPrompt) otherPrompt.textContent = t('setupBlockerOtherPrompt');
+  if (otherText) otherText.placeholder = t('setupBlockerOtherPlaceholder');
+  if (otherSend) otherSend.textContent = t('setupBlockerSend');
+  if (thanks) thanks.textContent = t('setupBlockerThanks');
+  if (tellMore) {
+    tellMore.textContent = t('setupBlockerTellMore');
+    tellMore.href = GITHUB_NEW_ISSUE_URL;
+  }
+  renderSetupBlockerChoices();
+}
+
+function openSetupBlockerDialog() {
+  const overlay = $('setupBlockerOverlay');
+  if (!overlay) return;
+  if (setupBlockerCloseTimer) {
+    clearTimeout(setupBlockerCloseTimer);
+    setupBlockerCloseTimer = null;
+  }
+  setupBlockerSubmitted = false;
+  setupBlockerLastFocus = document.activeElement;
+  updateSetupBlockerTexts();
+  setSetupBlockerControlsDisabled(false);
+  const choices = $('setupBlockerChoices');
+  const otherBox = $('setupBlockerOtherBox');
+  const thanks = $('setupBlockerThanks');
+  const otherText = $('setupBlockerOtherText');
+  if (choices) choices.hidden = false;
+  if (otherBox) otherBox.hidden = true;
+  if (thanks) thanks.hidden = true;
+  if (otherText) otherText.value = '';
+  overlay.hidden = false;
+  const firstChoice = overlay.querySelector('.setup-blocker-choice');
+  if (firstChoice) firstChoice.focus();
+}
+
+function closeSetupBlockerDialog() {
+  const overlay = $('setupBlockerOverlay');
+  if (!overlay) return;
+  if (setupBlockerCloseTimer) {
+    clearTimeout(setupBlockerCloseTimer);
+    setupBlockerCloseTimer = null;
+  }
+  overlay.hidden = true;
+  if (setupBlockerLastFocus && typeof setupBlockerLastFocus.focus === 'function') {
+    setupBlockerLastFocus.focus();
+  }
+}
+
+function showSetupBlockerOther() {
+  const choices = $('setupBlockerChoices');
+  const otherBox = $('setupBlockerOtherBox');
+  const otherText = $('setupBlockerOtherText');
+  if (choices) choices.hidden = true;
+  if (otherBox) otherBox.hidden = false;
+  if (otherText) otherText.focus();
+}
+
+function setSetupBlockerControlsDisabled(disabled) {
+  document.querySelectorAll('.setup-blocker-choice, #setupBlockerOtherSend').forEach(btn => {
+    btn.disabled = disabled;
+  });
+}
+
+function submitSetupBlocker(reason) {
+  if (setupBlockerSubmitted) return;
+  setupBlockerSubmitted = true;
+  setSetupBlockerControlsDisabled(true);
+
+  if (typeof Analytics !== 'undefined') {
+    Analytics.setupBlocker(getSelectedPanelType(), reason).catch(() => {});
+  }
+
+  const choices = $('setupBlockerChoices');
+  const otherBox = $('setupBlockerOtherBox');
+  const thanks = $('setupBlockerThanks');
+  if (choices) choices.hidden = true;
+  if (otherBox) otherBox.hidden = true;
+  if (thanks) thanks.hidden = false;
+
+  setupBlockerCloseTimer = setTimeout(closeSetupBlockerDialog, 1400);
+}
+
+function openSetupBlockerMore() {
+  if (!setupBlockerSubmitted) {
+    submitSetupBlocker('other');
+  }
+  try {
+    chrome.tabs.create({ url: GITHUB_NEW_ISSUE_URL });
+  } catch (e) {
+    window.open(GITHUB_NEW_ISSUE_URL, '_blank', 'noopener');
+  }
+}
+
 // Apply internationalization translations
 function applyTranslations() {
   $('i18n_title').innerHTML = lucideIcon('settings', 20) + '<span>VPS Dashboard · ' + t('subtitle') + '</span>';
@@ -306,6 +456,7 @@ function applyTranslations() {
   $('testBtn').textContent = t('btnTest');
   $('exportConfigBtn').textContent = t('btnExportConfig');
   $('importConfigBtn').textContent = t('btnImportConfig');
+  updateSetupBlockerTexts();
   
   // placeholder
   $('serverName').placeholder = t('placeholderName');
@@ -811,6 +962,7 @@ function copyServer(id) {
 
 // Test API connection
 function testConnection() {
+  setSetupStillStuckVisible(false);
   const form = collectServerForm({ updateInputs: true });
   if (!form) return;
   
@@ -836,16 +988,20 @@ function testConnection() {
           location.reload();
           return;
         }
+        if (typeof Analytics !== 'undefined') Analytics.connectionTestFailed(form.panelType, errMsg).catch(() => {});
         showMsg(t('msgTestFail', { error: errMsg }), false);
+        setSetupStillStuckVisible(true);
         return;
       }
       if (resp && resp.success) {
         if (typeof Analytics !== 'undefined') Analytics.connectionTestSucceeded(form.panelType).catch(() => {});
         showMsg(t('msgTestOk'), true);
+        setSetupStillStuckVisible(false);
       } else {
         const errMsg = resp ? resp.error : t('apiTimeout');
         if (typeof Analytics !== 'undefined') Analytics.connectionTestFailed(form.panelType, errMsg).catch(() => {});
         showMsg(t('msgTestFail', { error: errMsg }), false);
+        setSetupStillStuckVisible(true);
       }
     });
   } catch (e) {
@@ -854,7 +1010,9 @@ function testConnection() {
       location.reload();
       return;
     }
+    if (typeof Analytics !== 'undefined') Analytics.connectionTestFailed(form.panelType, e).catch(() => {});
     showMsg(t('msgTestFail', { error: e.message }), false);
+    setSetupStillStuckVisible(true);
   }
 }
 
@@ -1052,6 +1210,32 @@ $('addBtn').addEventListener('click', () => {
 });
 $('saveBtn').addEventListener('click', saveServer);
 $('testBtn').addEventListener('click', testConnection);
+$('setupHelpBtn').addEventListener('click', openSetupBlockerDialog);
+$('setupStillStuckBtn').addEventListener('click', openSetupBlockerDialog);
+$('setupBlockerClose').addEventListener('click', closeSetupBlockerDialog);
+$('setupBlockerOverlay').addEventListener('click', e => {
+  if (e.target === $('setupBlockerOverlay')) closeSetupBlockerDialog();
+});
+$('setupBlockerChoices').addEventListener('click', e => {
+  const choice = e.target.closest('.setup-blocker-choice');
+  if (!choice) return;
+  const reason = choice.dataset.reason;
+  if (reason === 'other') {
+    showSetupBlockerOther();
+    return;
+  }
+  submitSetupBlocker(reason);
+});
+$('setupBlockerOtherSend').addEventListener('click', () => submitSetupBlocker('other'));
+$('setupBlockerTellMore').addEventListener('click', e => {
+  e.preventDefault();
+  openSetupBlockerMore();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $('setupBlockerOverlay') && !$('setupBlockerOverlay').hidden) {
+    closeSetupBlockerDialog();
+  }
+});
 $('panelType').addEventListener('change', () => {
   updatePanelHelp();
   hideMsg();

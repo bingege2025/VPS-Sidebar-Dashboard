@@ -69,6 +69,16 @@
     lightsail: 'lightsail'
   };
 
+  var SETUP_BLOCKER_REASON = {
+    credentials_not_found: true,
+    fields_unclear: true,
+    credential_privacy_concern: true,
+    provider_mismatch: true,
+    setup_too_complicated: true,
+    just_exploring: true,
+    other: true
+  };
+
   function hasStorage() {
     return (typeof chrome !== 'undefined') && chrome.storage && chrome.storage.local;
   }
@@ -159,6 +169,11 @@
     return PROVIDER_EVENT_VALUE[panelType] || 'unknown';
   }
 
+  function setupBlockerReason(reason) {
+    reason = String(reason || '');
+    return SETUP_BLOCKER_REASON[reason] ? reason : 'other';
+  }
+
   // Action → dedicated ASCII snake_case GA4 event name.
   // One event name per action; the action is NOT duplicated as a param.
   var ACTION_EVENT_NAME = {
@@ -180,6 +195,7 @@
     if (/401|403|unauthor|forbidden|authentication|auth[_ ]?fail|invalid (api )?(key|token|hash|secret|credential)|bad credential|invalid signature/.test(s)) return 'authentication';
     if (/timeout|timed out|etimedout|aborted/.test(s)) return 'timeout';
     if (/invalid url|invalidurl|malformed url|not a valid url/.test(s)) return 'invalid_url';
+    if (/cors|cross[- ]origin|access-control-allow-origin/.test(s)) return 'cors';
     if (/failed to fetch|network|enotfound|econnrefused|econnreset|getaddrinfo|dns|offline|ssl|certificate/.test(s)) return 'network';
     if (/status [45]\d\d|\b[45]\d\d\b|api[_ ]?error|http[_ ]?error/.test(s)) return 'api_error';
     return 'unknown';
@@ -277,6 +293,12 @@
     },
     contactDev: function () {
       return track('contact_dev');
+    },
+    setupBlocker: function (panelType, reason) {
+      return track('setup_blocker', {
+        provider: providerEventValue(panelType),
+        reason: setupBlockerReason(reason)
+      });
     },
 
     // 7. Expiry reminders
